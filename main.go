@@ -8,9 +8,6 @@ import "fmt"
 func main() {
 	fmt.Println("working!.")
 
-	var op Opcode
-	op.initOpcodeSet()
-
-	op.noParam[0]()
-	op.noParam[1]()
+	// var op Opcode
+	// op.initOpcodeSet()
 }

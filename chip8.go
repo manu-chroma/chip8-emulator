@@ -1,6 +1,8 @@
 package main
 
-// VM
+// VM ...
 type VM struct {
-	cpu CPU
+	cpu    CPU
+	screen Screen
+	memory Memory
 }
