@@ -13,5 +13,7 @@ type Memory struct {
 }
 
 // InitMemory ...
-func (m *Memory) InitMemory() {
+func newMemory() *Memory {
+	m := new(Memory)
+	return m
 }

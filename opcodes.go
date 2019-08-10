@@ -20,7 +20,7 @@ package main
 // 00E0 - CLS
 // Clear display
 func (vm *VM) cls() {
-	scr := &vm.screen
+	scr := vm.screen
 	scr.clearDisplay()
 }
 
@@ -28,7 +28,7 @@ func (vm *VM) cls() {
 // Return from sub-routine
 func (vm *VM) ret() {
 
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	// todo: throwing error
 	cpu.programCounter = cpu.stack[cpu.stackPointer]
@@ -40,7 +40,7 @@ func (vm *VM) ret() {
 func (vm *VM) jp(nnn uint16) {
 	// @discuss: should we validate the addr before setting it?
 
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.programCounter = nnn
 }
@@ -52,7 +52,7 @@ func (vm *VM) jp(nnn uint16) {
 func (vm *VM) call(nnn uint16) {
 	// should we validate the addr before setting it
 
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.stackPointer++
 	cpu.stack[cpu.stackPointer] = cpu.programCounter
@@ -63,7 +63,7 @@ func (vm *VM) call(nnn uint16) {
 // Skip next instruction if Vx = kk.
 func (vm *VM) se(x uint8, kk byte) {
 
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	if cpu.register[x] == kk {
 		// skipping two because the instruction is of 2
@@ -77,7 +77,7 @@ func (vm *VM) se(x uint8, kk byte) {
 // Skip next instruction if Vx != kk.
 func (vm *VM) se_not(x uint8, kk byte) {
 
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	if cpu.register[x] != kk {
 		// skipping two because the instruction is of 2
@@ -89,7 +89,7 @@ func (vm *VM) se_not(x uint8, kk byte) {
 // 5xy0 - SE Vx, Vy
 // Skip next instruction if Vx = Vy.
 func (vm *VM) se_reg(x, y uint8) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	if cpu.register[x] == cpu.register[y] {
 		// skipping two because the instruction is of 2
@@ -101,7 +101,7 @@ func (vm *VM) se_reg(x, y uint8) {
 // 6xkk - LD Vx, byte
 // Set Vx = kk.
 func (vm *VM) ld(vx uint8, data byte) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.register[vx] = data
 }
@@ -109,7 +109,7 @@ func (vm *VM) ld(vx uint8, data byte) {
 // 7xkk - ADD Vx, byte
 // Set Vx = Vx + kk.
 func (vm *VM) add(vx uint8, data byte) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.register[vx] += data
 }
@@ -117,7 +117,7 @@ func (vm *VM) add(vx uint8, data byte) {
 // 8xy0 - LD Vx, Vy
 // Set Vx = Vy.
 func (vm *VM) ld_reg(vx, vy uint8) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.register[vx] = cpu.register[vy]
 }
@@ -125,7 +125,7 @@ func (vm *VM) ld_reg(vx, vy uint8) {
 // 8xy1 - OR Vx, Vy
 // Set Vx = Vx OR Vy.
 func (vm *VM) or(vx, vy uint8) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	vxData := cpu.register[vx]
 	vyData := cpu.register[vy]
@@ -135,7 +135,7 @@ func (vm *VM) or(vx, vy uint8) {
 // 8xy2 - AND Vx, Vy
 // Set Vx = Vx AND Vy.
 func (vm *VM) and(vx, vy uint8) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	vxData := cpu.register[vx]
 	vyData := cpu.register[vy]
@@ -145,7 +145,7 @@ func (vm *VM) and(vx, vy uint8) {
 // 8xy3 - XOR Vx, Vy
 // Set Vx = Vx XOR Vy.
 func (vm *VM) xor(vx, vy uint8) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	vxData := cpu.register[vx]
 	vyData := cpu.register[vy]
@@ -160,7 +160,7 @@ func (vm *VM) xor(vx, vy uint8) {
 // 9xy0 - SNE Vx, Vy
 // Skip next instruction if Vx != Vy.
 func (vm *VM) sne(vx, vy uint8) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	if cpu.register[vx] != cpu.register[vy] {
 		cpu.programCounter += 2
@@ -170,7 +170,7 @@ func (vm *VM) sne(vx, vy uint8) {
 // Annn - LD I, addr
 // Set I = nnn.
 func (vm *VM) ld_i(addr uint16) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.registerI = addr
 }
@@ -178,7 +178,7 @@ func (vm *VM) ld_i(addr uint16) {
 // Bnnn - JP V0, addr
 // Jump to location nnn + V0.
 func (vm *VM) jp_add(addr uint16) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.programCounter = addr + uint16(cpu.register[0])
 }
@@ -188,7 +188,7 @@ func (vm *VM) jp_add(addr uint16) {
 // Fx07 - LD Vx, DT
 // Set Vx = delay timer value.
 func (vm *VM) ld_dt_in_vx(vx uint8) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.register[vx] = cpu.delay
 }
@@ -200,7 +200,7 @@ func (vm *VM) ld_dt_in_vx(vx uint8) {
 // Fx15 - LD DT, Vx
 // Set delay timer = Vx.
 func (vm *VM) ld_dt(vx uint8) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.delay = cpu.register[vx]
 }
@@ -208,7 +208,7 @@ func (vm *VM) ld_dt(vx uint8) {
 // Fx18 - LD ST, Vx
 // Set sound timer = Vx.
 func (vm *VM) ld_st(vx uint8) {
-	cpu := &vm.cpu
+	cpu := vm.cpu
 
 	cpu.sound = cpu.register[vx]
 }
@@ -218,8 +218,8 @@ func (vm *VM) ld_st(vx uint8) {
 // Fx55 - LD [I], Vx
 // Store registers V0 through Vx in memory starting at location I.
 func (vm *VM) ld_i_to_vx(vx uint8, addr uint16) {
-	cpu := &vm.cpu
-	memory := &vm.memory
+	cpu := vm.cpu
+	memory := vm.memory
 
 	for reg := uint8(0); reg <= vx; reg++ {
 		// reading each byte into the register
@@ -231,8 +231,8 @@ func (vm *VM) ld_i_to_vx(vx uint8, addr uint16) {
 // Fx65 - LD Vx, [I]
 // Read registers V0 through Vx from memory starting at location I.
 func (vm *VM) ld_vx(vx uint8, addr uint16) {
-	cpu := &vm.cpu
-	memory := &vm.memory
+	cpu := vm.cpu
+	memory := vm.memory
 
 	for reg := uint8(0); reg <= vx; reg++ {
 		// reading each byte into the register

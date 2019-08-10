@@ -1,5 +1,7 @@
 package main
 
+import "log"
+
 // CPU ..
 type CPU struct {
 	// Used to store memory addresses
@@ -36,4 +38,14 @@ func (cpu *CPU) StepTimers() {
 		cpu.sound = MaxOf(0, cpu.sound-TimerFrequencyHertz)
 	}
 
+}
+
+func newCPU() *CPU {
+
+	log.Print("Initing CPU..")
+
+	cpu := new(CPU)
+	cpu.delay = 0
+
+	return cpu
 }
