@@ -22,12 +22,14 @@ func main() {
 		romFilePath: romFilePath}
 
 	// create VM
-	vm := InitVM(&conf)
+	_ = InitVM(&conf)
+
+	for {}
 
 	// start processing
-	for {
-		vm.cpu.Tick()
-	}
+	// for {
+	// 	vm.cpu.Tick()
+	// }
 
 	// experimenting with function pointer for opcodes
 	// var op Opcode

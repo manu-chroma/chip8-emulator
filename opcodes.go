@@ -208,7 +208,7 @@ func (vm *VM) rnd(vx uint8, kk byte) {
 func (vm *VM) skp(vx uint8) {
 	cpu := vm.cpu
 
-	vx_data := cpu.register[vx]
+	vxData := cpu.register[vx]
 
 	keyEvent := <-vm.mouseEvents
 	val, err := Chip8Key(keyEvent.Code)
@@ -219,7 +219,7 @@ func (vm *VM) skp(vx uint8) {
 		return
 	}
 
-	if vx_data == val {
+	if vxData == val {
 		cpu.programCounter += 2
 	}
 }
@@ -230,7 +230,7 @@ func (vm *VM) skp(vx uint8) {
 func (vm *VM) sknp(vx uint8) {
 	cpu := vm.cpu
 
-	vx_data := cpu.register[vx]
+	vxData := cpu.register[vx]
 
 	keyEvent := <-vm.mouseEvents
 	val, err := Chip8Key(keyEvent.Code)
@@ -241,7 +241,7 @@ func (vm *VM) sknp(vx uint8) {
 		return
 	}
 
-	if vx_data != val {
+	if vxData != val {
 		cpu.programCounter += 2
 	}
 }
