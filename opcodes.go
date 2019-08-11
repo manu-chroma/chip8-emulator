@@ -1,5 +1,7 @@
 package main
 
+import "log"
+
 // Contains CHIP-8 instruction set of 36 instructions
 
 // All instructions are 2 bytes long and are stored
@@ -183,7 +185,66 @@ func (vm *VM) jp_add(addr uint16) {
 	cpu.programCounter = addr + uint16(cpu.register[0])
 }
 
-// todo
+// Cxkk - RND Vx, byte
+// Set Vx = random byte AND kk.
+// The interpreter generates a random number from 0 to 255, which is then ANDed with the value kk. The results are stored in Vx. See instruction 8xy2 for more information on AND.
+func (vm *VM) rnd(vx uint8, kk byte) {
+	cpu := vm.cpu
+
+	// todo: can we improve the rand here
+	// also, need to @test this
+	cpu.register[vx] = uint8(RandInRange(0, 256)) & kk
+}
+
+// Dxyn - DRW Vx, Vy, nibble
+// Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
+
+// The interpreter reads n bytes from memory, starting at the address stored in I. These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen. See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
+
+// Ex9E - SKP Vx
+// Skip next instruction if key with the value of Vx is pressed.
+
+// Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
+func (vm *VM) skp(vx uint8) {
+	cpu := vm.cpu
+
+	vx_data := cpu.register[vx]
+
+	keyEvent := <-vm.mouseEvents
+	val, err := Chip8Key(keyEvent.Code)
+
+	// todo: keep checking until we find a supported key
+	if err != nil {
+		log.Printf("unsupported key: %s", keyEvent.Code)
+		return
+	}
+
+	if vx_data == val {
+		cpu.programCounter += 2
+	}
+}
+
+// ExA1 - SKNP Vx
+// Skip next instruction if key with the value of Vx is not pressed.
+// Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
+func (vm *VM) sknp(vx uint8) {
+	cpu := vm.cpu
+
+	vx_data := cpu.register[vx]
+
+	keyEvent := <-vm.mouseEvents
+	val, err := Chip8Key(keyEvent.Code)
+
+	// todo: keep checking until we find a supported key
+	if err != nil {
+		log.Printf("unsupported key: %s", keyEvent.Code)
+		return
+	}
+
+	if vx_data != val {
+		cpu.programCounter += 2
+	}
+}
 
 // Fx07 - LD Vx, DT
 // Set Vx = delay timer value.
@@ -213,7 +274,24 @@ func (vm *VM) ld_st(vx uint8) {
 	cpu.sound = cpu.register[vx]
 }
 
-// todo
+// Fx1E - ADD I, Vx
+// Set I = I + Vx.
+// The values of I and Vx are added, and the results are stored in I.
+func (vm *VM) add_i(vx uint8) {
+	cpu := vm.cpu
+
+	cpu.registerI = uint16(cpu.register[vx]) + cpu.registerI
+}
+
+// Fx29 - LD F, Vx
+// Set I = location of sprite for digit Vx.
+
+// The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx. See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
+
+// Fx33 - LD B, Vx
+// Store BCD representation of Vx in memory locations I, I+1, and I+2.
+
+// The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
 
 // Fx55 - LD [I], Vx
 // Store registers V0 through Vx in memory starting at location I.
@@ -225,7 +303,6 @@ func (vm *VM) ld_i_to_vx(vx uint8, addr uint16) {
 		// reading each byte into the register
 		memory.ram[addr] = cpu.register[reg]
 	}
-
 }
 
 // Fx65 - LD Vx, [I]
@@ -240,7 +317,9 @@ func (vm *VM) ld_vx(vx uint8, addr uint16) {
 	}
 }
 
-// Opcode ..
+// Opcode management in this way will help
+// us avoid ugly switch case, but I will probably
+// implement this in next improvement
 type Opcode struct {
 	noParam [2]func()
 }

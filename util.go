@@ -1,5 +1,7 @@
 package main
 
+import "math/rand"
+
 // MinOf arbitary no. of bytes
 func MinOf(vars ...byte) byte {
 	mini := vars[0]
@@ -22,4 +24,11 @@ func MaxOf(vars ...byte) byte {
 	}
 
 	return maxi
+}
+
+// RandInRange returns an int between the range
+// [min, max). Will panic if (max - min) <= 0
+func RandInRange(min, max int) int {
+
+	return rand.Intn(max-min) + min
 }

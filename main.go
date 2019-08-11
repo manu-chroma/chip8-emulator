@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"log"
+	"os"
+)
 
 /// Refer to: http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
 /// for good CHIP-8 reference mannual
@@ -9,25 +12,25 @@ func main() {
 	log.Println("Booting up CHIP-8...")
 
 	// parse the rom file
-	/*
-		romFilePath := flag.String("rom", "default", "path to rom file")
-		flag.Parse()
+	args := os.Args
 
-		// romFilePath = ""
+	// pick the las
+	romFilePath := args[len(args)-1]
+	log.Printf("Provided rom filepath: %s", romFilePath)
 
-		if *romFilePath == "" {
-			log.Fatalf("Rom path not provided! Exiting...")
-		}
+	conf := VMConfig{
+		romFilePath: romFilePath}
 
-		log.Printf("Provided rom filepath: %s", *romFilePath)
+	// create VM
+	vm := InitVM(&conf)
 
-	*/
+	// start processing
+	for {
+		vm.cpu.Tick()
+	}
 
 	// experimenting with function pointer for opcodes
 	// var op Opcode
 	// op.initOpcodeSet()
-
-	// create VM
-	_ = newCPU()
 
 }
