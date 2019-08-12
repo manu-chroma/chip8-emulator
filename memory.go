@@ -15,11 +15,18 @@ const (
 
 	SpriteDataStart = 0x000
 	SpriteDataEnd   = 0x1FF
+
+	DisplayDataStart = 0x100
+	DisplayDataEnd   = 0x1FF
+
+	ProgramAreaStart = 0x200
+	ProgramAreaEnd   = 0xFFF
 )
 
 // Memory module contains the RAM
 type Memory struct {
-	ram [RAMSize]byte
+	ram     [RAMSize]byte
+	romSize int
 }
 
 // InitMemory ...
@@ -53,6 +60,9 @@ func (m *Memory) LoadRomFile(romFilePath string) {
 
 	// src -> destiantion
 	// todo: check if this can be improved
-	// copy(m.romMemory[:], buf.Bytes()[:])
+	copy(m.ram[:], buf.Bytes()[:])
 
+	m.romSize = buf.Len() // expressed as no. of bytes
+
+	log.Println("Sucessfully copied rom file into ram buffer")
 }

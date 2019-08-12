@@ -25,10 +25,14 @@ func main() {
 		romFilePath: romFilePath}
 
 	// create VM
-	_ = InitVM(&conf)
+	vm := InitVM(&conf)
 
-	for {
-	}
+	log.Println("Rom file: ", vm.memory.ram[:vm.memory.romSize])
+
+	vm.Tick()
+
+	// for {
+	// }
 
 	// start processing
 	// for {

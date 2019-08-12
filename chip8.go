@@ -1,7 +1,7 @@
 package main
 
 import (
-	"errors"
+	"encoding/binary"
 	"log"
 
 	"golang.org/x/mobile/event/key"
@@ -32,7 +32,7 @@ func InitVM(vmConfig *VMConfig) *VM {
 	vm.cpu = newCPU()
 	vm.memory = newMemory()
 
-	// todo: error
+	// todo: error handling
 	vm.memory.LoadRomFile(vmConfig.romFilePath)
 
 	// setup display
@@ -54,9 +54,32 @@ func InitVM(vmConfig *VMConfig) *VM {
 // and returns the current opcode which is a 2 byte in size
 func (vm *VM) ReadOpcode() (uint16, error) {
 
-	// memory := vm.memory
+	memory := vm.memory
+	cpu := vm.cpu
 
-	return 0, errors.New("Failed to read")
+	// pick out program counter
+	pc := cpu.programCounter
+	// no need to off-set since we read the rom
+	// directly at the start of memory.ram buffer
+	// instead of 0x0200
+	// pc += 0x200
+
+	// read two bytes of data and concat
+	// this approach works as well, but found a better
+	// direct function call to do the same
+	// op1 := memory.ram[pc]
+	// op2 := memory.ram[pc+1]
+	// concat the 2 bytes of code
+	// opcode := (uint16(op1) << 8) | uint16(op2)
+
+	opcode := binary.LittleEndian.Uint16(memory.ram[pc : pc+2])
+
+	log.Printf("Identified opcode: %d", opcode)
+
+	cpu.programCounter += 2
+
+	return opcode, nil
+	// return 0, errors.New("Failed to read")
 }
 
 // Tick ...
@@ -70,7 +93,7 @@ func (vm *VM) Tick() {
 
 	vm.executeOpcode(opcode)
 
-	log.Printf("Opcode: %d", opcode)
+	log.Printf("Executed: %d", opcode)
 }
 
 // This will be our massive switch statement for now
@@ -93,6 +116,7 @@ func (vm *VM) executeOpcode(opcode uint16) {
 	// note: add here, same docs have been provided
 	// in opcodes.go for easy understanding
 
+	// todo: assign correct values for all here
 	upperByte := opcode & 0xFF00
 	// in most signifiant -> to least significant order
 	firstNibble := upperByte & 0xF
