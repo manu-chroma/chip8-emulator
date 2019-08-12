@@ -47,8 +47,8 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 	// create a separate
 	go driver.Main(func(s screen.Screen) {
 		opts := screen.NewWindowOptions{
-			Height: Row,
-			Width:  Col,
+			Height: Row * 2,
+			Width:  Col * 2,
 			Title:  "Chip-8 VM",
 		}
 
@@ -63,7 +63,7 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 		// create basic gradient
 		// @bug why are we needing col * 2 rather than col?
-		dim := image.Point{Col * 2, Row}
+		dim := image.Point{Col, Row}
 		drawBuff, err := s.NewBuffer(dim)
 		if err != nil {
 			log.Fatal(err)
@@ -71,7 +71,7 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 		defaultDrawToBuffer(drawBuff.RGBA())
 
-		log.Print("Window bounds: ")
+		log.Print("Window bounds: ", opts)
 		log.Printf("Buffer bounds: %s", drawBuff.Bounds())
 		log.Printf("Buffer size: %s", drawBuff.Size())
 
@@ -142,4 +142,7 @@ func defaultDrawToBuffer(img *image.RGBA) {
 			// }
 		}
 	}
+}
+
+func drawBackBuffer() {
 }

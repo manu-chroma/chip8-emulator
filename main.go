@@ -9,6 +9,9 @@ import (
 /// for good CHIP-8 reference mannual
 
 func main() {
+
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
 	log.Println("Booting up CHIP-8...")
 
 	// parse the rom file
@@ -24,7 +27,8 @@ func main() {
 	// create VM
 	_ = InitVM(&conf)
 
-	for {}
+	for {
+	}
 
 	// start processing
 	// for {

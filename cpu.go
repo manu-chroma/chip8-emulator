@@ -49,8 +49,3 @@ func newCPU() *CPU {
 
 	return cpu
 }
-
-// Tick ...
-func (cpu *CPU) Tick() {
-
-}

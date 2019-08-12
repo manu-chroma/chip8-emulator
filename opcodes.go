@@ -156,6 +156,22 @@ func (vm *VM) xor(vx, vy uint8) {
 
 // 8xy4 - ADD Vx, Vy
 // Set Vx = Vx + Vy, set VF = carry.
+//
+// The values of Vx and Vy are added together. If the result is greater than 8
+// bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the
+// result are kept, and stored in Vx.
+func (vm *VM) add_reg(vx, vy uint8) {
+	// todo
+}
+
+// 8xy5 - SUB Vx, Vy
+// Set Vx = Vx - Vy, set VF = NOT borrow.
+//
+// If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx,
+// and the results stored in Vx.
+func (vm *VM) sub_reg(vx, vy uint8) {
+	// todo
+}
 
 // TODO the other ones that are in the middle
 
@@ -200,6 +216,9 @@ func (vm *VM) rnd(vx uint8, kk byte) {
 // Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
 
 // The interpreter reads n bytes from memory, starting at the address stored in I. These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen. See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
+func (vm *VM) drw(x, y uint8, n uint8) {
+	// todo
+}
 
 // Ex9E - SKP Vx
 // Skip next instruction if key with the value of Vx is pressed.
@@ -210,7 +229,7 @@ func (vm *VM) skp(vx uint8) {
 
 	vxData := cpu.register[vx]
 
-	keyEvent := <-vm.mouseEvents
+	keyEvent := <-vm.keyboardEvents
 	val, err := Chip8Key(keyEvent.Code)
 
 	// todo: keep checking until we find a supported key
@@ -232,7 +251,7 @@ func (vm *VM) sknp(vx uint8) {
 
 	vxData := cpu.register[vx]
 
-	keyEvent := <-vm.mouseEvents
+	keyEvent := <-vm.keyboardEvents
 	val, err := Chip8Key(keyEvent.Code)
 
 	// todo: keep checking until we find a supported key
