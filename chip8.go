@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"fmt"
 	"log"
 
 	"golang.org/x/mobile/event/key"
@@ -72,9 +73,10 @@ func (vm *VM) ReadOpcode() (uint16, error) {
 	// concat the 2 bytes of code
 	// opcode := (uint16(op1) << 8) | uint16(op2)
 
-	opcode := binary.LittleEndian.Uint16(memory.ram[pc : pc+2])
+	opcode := binary.BigEndian.Uint16(memory.ram[pc : pc+2])
 
-	log.Printf("Identified opcode: %d", opcode)
+	hexRep := fmt.Sprintf("%x", opcode)
+	log.Printf("Identified opcode: %d, in hex: %s", opcode, hexRep)
 
 	cpu.programCounter += 2
 
@@ -119,7 +121,7 @@ func (vm *VM) executeOpcode(opcode uint16) {
 	// todo: assign correct values for all here
 	upperByte := opcode & 0xFF00
 	// in most signifiant -> to least significant order
-	firstNibble := upperByte & 0xF
+	firstNibble := (upperByte & 0xF) >> 8
 	// secondNibble := 0
 	thirdNibble := 0
 	fourthNibble := 0
@@ -131,6 +133,8 @@ func (vm *VM) executeOpcode(opcode uint16) {
 	var kk byte
 
 	lowerByte := opcode & 0x00FF
+
+	log.Printf("First Nibble: %s", HexOf(firstNibble))
 
 	// NOP
 	if opcode == 0 {

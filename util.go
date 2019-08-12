@@ -1,6 +1,9 @@
 package main
 
-import "math/rand"
+import (
+	"fmt"
+	"math/rand"
+)
 
 // MinOf arbitary no. of bytes
 func MinOf(vars ...byte) byte {
@@ -31,4 +34,14 @@ func MaxOf(vars ...byte) byte {
 func RandInRange(min, max int) int {
 
 	return rand.Intn(max-min) + min
+}
+
+// HexStringOf ...
+func HexOf(num uint16) string {
+	return fmt.Sprintf("%x", num)
+}
+
+// HexStringOf ...
+func HexOfByte(num byte) string {
+	return fmt.Sprintf("%x", num)
 }

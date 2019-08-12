@@ -23,6 +23,7 @@ import "log"
 // Clear display
 func (vm *VM) cls() {
 	scr := vm.screen
+	log.Printf("CLEARING DISPLAY")
 	scr.clearDisplay()
 }
 
@@ -31,7 +32,7 @@ func (vm *VM) cls() {
 func (vm *VM) ret() {
 
 	cpu := vm.cpu
-
+	log.Printf("RETURNING from sub-routine: PC: %d and SP: %d", cpu.programCounter, cpu.stackPointer)
 	// todo: throwing error
 	cpu.programCounter = cpu.stack[cpu.stackPointer]
 	cpu.stackPointer--
@@ -41,9 +42,8 @@ func (vm *VM) ret() {
 // Jump to location nnn
 func (vm *VM) jp(nnn uint16) {
 	// @discuss: should we validate the addr before setting it?
-
 	cpu := vm.cpu
-
+	log.Printf("JMP to addr %d and PC: %d and SP: %d", nnn, cpu.programCounter, cpu.stackPointer)
 	cpu.programCounter = nnn
 }
 
@@ -53,8 +53,9 @@ func (vm *VM) jp(nnn uint16) {
 // set to nnn.
 func (vm *VM) call(nnn uint16) {
 	// should we validate the addr before setting it
-
 	cpu := vm.cpu
+
+	log.Printf("CALL %d and PC: %d and SP: %d", nnn, cpu.programCounter, cpu.stackPointer)
 
 	cpu.stackPointer++
 	cpu.stack[cpu.stackPointer] = cpu.programCounter
@@ -66,6 +67,8 @@ func (vm *VM) call(nnn uint16) {
 func (vm *VM) se(x uint8, kk byte) {
 
 	cpu := vm.cpu
+
+	log.Printf("SKIP NXT INS if Vx == kk, Vx: %d and kk: %d", cpu.register[x], kk)
 
 	if cpu.register[x] == kk {
 		// skipping two because the instruction is of 2
@@ -81,6 +84,8 @@ func (vm *VM) se_not(x uint8, kk byte) {
 
 	cpu := vm.cpu
 
+	log.Printf("SKIP NXT INS if Vx != kk, Vx: %d and kk: %d", cpu.register[x], kk)
+
 	if cpu.register[x] != kk {
 		// skipping two because the instruction is of 2
 		// bytes size
@@ -93,6 +98,8 @@ func (vm *VM) se_not(x uint8, kk byte) {
 func (vm *VM) se_reg(x, y uint8) {
 	cpu := vm.cpu
 
+	log.Printf("SKIP NXT INS if Vx == Vy, Vx: %d and kk: %d", cpu.register[x], cpu.register[y])
+
 	if cpu.register[x] == cpu.register[y] {
 		// skipping two because the instruction is of 2
 		// bytes size
@@ -104,7 +111,7 @@ func (vm *VM) se_reg(x, y uint8) {
 // Set Vx = kk.
 func (vm *VM) ld(vx uint8, data byte) {
 	cpu := vm.cpu
-
+	log.Printf("LD byte: %d to Vx: %d", data, vx)
 	cpu.register[vx] = data
 }
 
@@ -112,7 +119,7 @@ func (vm *VM) ld(vx uint8, data byte) {
 // Set Vx = Vx + kk.
 func (vm *VM) add(vx uint8, data byte) {
 	cpu := vm.cpu
-
+	log.Printf("ADD-ING byte: %d to Vx: %d", data, cpu.register[vx])
 	cpu.register[vx] += data
 }
 
@@ -120,7 +127,7 @@ func (vm *VM) add(vx uint8, data byte) {
 // Set Vx = Vy.
 func (vm *VM) ld_reg(vx, vy uint8) {
 	cpu := vm.cpu
-
+	log.Printf("LD data from Vy: %d to Vx: %d", vy, vx)
 	cpu.register[vx] = cpu.register[vy]
 }
 
@@ -156,12 +163,26 @@ func (vm *VM) xor(vx, vy uint8) {
 
 // 8xy4 - ADD Vx, Vy
 // Set Vx = Vx + Vy, set VF = carry.
-//
 // The values of Vx and Vy are added together. If the result is greater than 8
 // bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the
 // result are kept, and stored in Vx.
 func (vm *VM) add_reg(vx, vy uint8) {
 	// todo
+	cpu := vm.cpu
+	tmp := uint16(cpu.register[vx]) + uint16(cpu.register[vy])
+
+	MAX := uint16(255)
+
+	if tmp > MAX {
+		cpu.registerVF = 1
+	} else {
+		cpu.registerVF = 0
+	}
+
+	// todo: verify that in case of overflow, only the lowest
+	// 8bits are kept
+	// todo: write better implementation
+	cpu.register[vx] += cpu.register[vy]
 }
 
 // 8xy5 - SUB Vx, Vy
@@ -169,11 +190,46 @@ func (vm *VM) add_reg(vx, vy uint8) {
 //
 // If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx,
 // and the results stored in Vx.
+// @verify @not-tested
 func (vm *VM) sub_reg(vx, vy uint8) {
-	// todo
+	cpu := vm.cpu
+
+	if cpu.register[vx] > cpu.register[vy] {
+		cpu.registerVF = 1
+	} else {
+		cpu.registerVF = 0
+	}
+
+	cpu.register[vx] -= cpu.register[vy]
 }
 
-// TODO the other ones that are in the middle
+// 8xy6 - SHR Vx {, Vy}
+// Set Vx = Vx SHR 1.
+// If the least-significant bit of Vx is 1, then VF is set to 1, otherwise 0. Then Vx is divided by 2.
+// @test
+func (vm *VM) shr(vx, vy uint8) {
+	cpu := vm.cpu
+
+	if cpu.register[vx] & 1 {
+		cpu.registerVF = 1
+	} else {
+		cpu.registerVF = 0
+	}
+
+	cpu.register[vx] /= 2
+}
+
+// 8xy7 - SUBN Vx, Vy
+// Set Vx = Vy - Vx, set VF = NOT borrow.
+
+// If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
+
+// TODO
+
+// 8xyE - SHL Vx {, Vy}
+// Set Vx = Vx SHL 1.
+
+// If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
 
 // 9xy0 - SNE Vx, Vy
 // Skip next instruction if Vx != Vy.
@@ -256,7 +312,7 @@ func (vm *VM) sknp(vx uint8) {
 
 	// todo: keep checking until we find a supported key
 	if err != nil {
-		log.Printf("unsupported key: %s", keyEvent.Code)
+		log.Printf("Unsupported key: %s", keyEvent.Code)
 		return
 	}
 
@@ -276,6 +332,12 @@ func (vm *VM) ld_dt_in_vx(vx uint8) {
 // Fx0A - LD Vx, K
 // Wait for a key press, store the value of the key in Vx.
 // All execution stops until a key is pressed, then the value of that key is stored in Vx.
+func (vm *VM) ld_key(vx uint8) {
+	cpu := vm.cpu
+	key := <-vm.keyboardEvents
+	// todo: test and not ignore error?
+	cpu.register[vx], _ = Chip8Key(key.Code)
+}
 
 // Fx15 - LD DT, Vx
 // Set delay timer = Vx.
