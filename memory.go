@@ -50,7 +50,7 @@ func (m *Memory) LoadRomFile(romFilePath string) {
 	defer f.Close()
 
 	buf := bytes.NewBuffer(nil)
-	_, err = io.Copy(buf, f) // Error handling elided for brevity.
+	_, err = io.Copy(buf, f)
 
 	if err != nil {
 		log.Printf("Not able to read rom data into buffer")
@@ -62,7 +62,7 @@ func (m *Memory) LoadRomFile(romFilePath string) {
 	// todo: check if this can be improved
 	copy(m.ram[ProgramAreaStart:], buf.Bytes()[:])
 
-	m.romSize = buf.Len() // expressed as no. of bytes
+	m.romSize = buf.Len() // expressed as num of bytes
 
 	log.Printf("Rom buffer size is: %d", m.romSize)
 

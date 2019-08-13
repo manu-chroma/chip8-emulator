@@ -30,9 +30,13 @@ func main() {
 
 	log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
 
+	// TODO: the screen should be running in the main go thread.
+	// https://stackoverflow.com/a/57474359/1180321
+
 	for {
 		vm.Tick()
 		var t = (2 * 100 * time.Duration(1e6))
 		time.Sleep(t)
 	}
+
 }

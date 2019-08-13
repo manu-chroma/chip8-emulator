@@ -5,7 +5,7 @@ import "log"
 // Contains CHIP-8 instruction set of 36 instructions
 
 // All instructions are 2 bytes long and are stored
-// most-significant-byte first. In memory, the first byte
+// most-significant-byte first (Big endian). In memory, the first byte
 // of each instruction should be located at an even
 // addresses. If a program includes sprite data, it should
 // be padded so any instructions following it will be
@@ -376,21 +376,22 @@ func (vm *VM) add_i(vx uint8) {
 
 // Fx55 - LD [I], Vx
 // Store registers V0 through Vx in memory starting at location I.
-func (vm *VM) ld_i_to_vx(vx uint8, addr uint16) {
+func (vm *VM) ld_i_to_vx(vx uint8) {
 	cpu := vm.cpu
 	memory := vm.memory
 
 	for reg := uint8(0); reg <= vx; reg++ {
 		// reading each byte into the register
-		memory.ram[addr] = cpu.register[reg]
+		memory.ram[cpu.registerI] = cpu.register[reg]
 	}
 }
 
 // Fx65 - LD Vx, [I]
 // Read registers V0 through Vx from memory starting at location I.
-func (vm *VM) ld_vx(vx uint8, addr uint16) {
+func (vm *VM) ld_vx(vx uint8) {
 	cpu := vm.cpu
 	memory := vm.memory
+	addr := cpu.registerI
 
 	for reg := uint8(0); reg <= vx; reg++ {
 		// reading each byte into the register
@@ -398,13 +399,9 @@ func (vm *VM) ld_vx(vx uint8, addr uint16) {
 	}
 }
 
-// Opcode management in this way will help
+// @future Opcode management in this way will help
 // us avoid ugly switch case, but I will probably
 // implement this in next improvement
 type Opcode struct {
 	noParam [2]func()
 }
-
-// func (op *Opcode) initOpcodeSet() {
-// 	op.noParam = [2]func(){(vm) cls, ret}
-// }

@@ -2,10 +2,13 @@ package main
 
 import (
 	"encoding/binary"
+	"errors"
 	"log"
 
 	"golang.org/x/mobile/event/key"
 )
+
+var ErrOpcodeNotImplemented = errors.New("Opcode not implemented yet!")
 
 // VM ...
 type VM struct {
@@ -234,6 +237,29 @@ func (vm *VM) executeOpcode(opcode uint16) {
 		}
 	} else if firstNibble == 0xF {
 		// last remaining in series
+		if lowerByte == 0x07 {
+			// Fx07
+			vm.ld_dt_in_vx(x)
+		} else if lowerByte == 0x15 {
+			// Fx15
+			vm.ld_dt(x)
+		} else if lowerByte == 0x18 {
+			// Fx18
+			vm.ld_st(x)
+		} else if lowerByte == 0x1E {
+			// Fx1E
+			vm.add_i(x)
+		} else if lowerByte == 0x29 {
+			log.Fatal(ErrOpcodeNotImplemented)
+		} else if lowerByte == 0x33 {
+			log.Fatal(ErrOpcodeNotImplemented)
+		} else if lowerByte == 0x55 {
+			// Fx55
+			vm.ld_i_to_vx(x)
+		} else if lowerByte == 0x65 {
+			// Fx65
+			vm.ld_vx(x)
+		}
 	}
 
 }
