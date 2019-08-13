@@ -36,12 +36,12 @@ func RandInRange(min, max int) int {
 	return rand.Intn(max-min) + min
 }
 
-// HexStringOf ...
+// HexOf ...
 func HexOf(num uint16) string {
 	return fmt.Sprintf("%x", num)
 }
 
-// HexStringOf ...
+// HexOfByte ...
 func HexOfByte(num byte) string {
 	return fmt.Sprintf("%x", num)
 }

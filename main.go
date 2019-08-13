@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"os"
+	"time"
 )
 
 /// Refer to: http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
@@ -29,18 +30,9 @@ func main() {
 
 	log.Println("Rom file: ", vm.memory.ram[:vm.memory.romSize])
 
-	vm.Tick()
-
-	// for {
-	// }
-
-	// start processing
-	// for {
-	// 	vm.cpu.Tick()
-	// }
-
-	// experimenting with function pointer for opcodes
-	// var op Opcode
-	// op.initOpcodeSet()
-
+	for {
+		vm.Tick()
+		var t = (2 * 1000 * time.Duration(1e6))
+		time.Sleep(t)
+	}
 }

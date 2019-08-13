@@ -210,7 +210,7 @@ func (vm *VM) sub_reg(vx, vy uint8) {
 func (vm *VM) shr(vx, vy uint8) {
 	cpu := vm.cpu
 
-	if cpu.register[vx] & 1 {
+	if cpu.register[vx]&1 == 1 {
 		cpu.registerVF = 1
 	} else {
 		cpu.registerVF = 0
@@ -245,7 +245,7 @@ func (vm *VM) sne(vx, vy uint8) {
 // Set I = nnn.
 func (vm *VM) ld_i(addr uint16) {
 	cpu := vm.cpu
-
+	log.Printf("LD: Loading addr %d into register I", addr)
 	cpu.registerI = addr
 }
 

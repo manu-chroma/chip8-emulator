@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/binary"
-	"fmt"
 	"log"
 
 	"golang.org/x/mobile/event/key"
@@ -75,13 +74,12 @@ func (vm *VM) ReadOpcode() (uint16, error) {
 
 	opcode := binary.BigEndian.Uint16(memory.ram[pc : pc+2])
 
-	hexRep := fmt.Sprintf("%x", opcode)
-	log.Printf("Identified opcode: %d, in hex: %s", opcode, hexRep)
+	hexRep := HexOf(opcode)
+	log.Printf("**** Identified opcode :: %s ****\n", hexRep)
 
 	cpu.programCounter += 2
 
 	return opcode, nil
-	// return 0, errors.New("Failed to read")
 }
 
 // Tick ...
@@ -95,7 +93,7 @@ func (vm *VM) Tick() {
 
 	vm.executeOpcode(opcode)
 
-	log.Printf("Executed: %d", opcode)
+	log.Printf("Executed: %s", HexOf(opcode))
 }
 
 // This will be our massive switch statement for now
@@ -105,6 +103,7 @@ func (vm *VM) executeOpcode(opcode uint16) {
 
 	if opcode == 0 {
 		// no operation
+		log.Printf("NO OP code called! %s", HexOf(opcode))
 	}
 
 	// Atanomy of a CHIP-8 opcode
@@ -114,27 +113,36 @@ func (vm *VM) executeOpcode(opcode uint16) {
 	//        upperByte                  lowerByte
 
 	// terminology used for variables and opcode below
-	// @todo
-	// note: add here, same docs have been provided
+	// In these listings, the following variables are used:
+
+	// nnn or addr - A 12-bit value, the lowest 12 bits of the instruction
+	// n or nibble - A 4-bit value, the lowest 4 bits of the instruction
+	// x - A 4-bit value, the lower 4 bits of the high byte of the instruction
+	// y - A 4-bit value, the upper 4 bits of the low byte of the instruction
+	// kk or byte - An 8-bit value, the lowest 8 bits of the instruction
+
+	// NOTE: same docs (above) have been provided
 	// in opcodes.go for easy understanding
 
-	// todo: assign correct values for all here
-	upperByte := opcode & 0xFF00
-	// in most signifiant -> to least significant order
-	firstNibble := (upperByte & 0xF) >> 8
-	// secondNibble := 0
-	thirdNibble := 0
-	fourthNibble := 0
+	upperByte := byte(opcode >> 8) // & 0xFF00
+	lowerByte := byte(opcode & 0xFF)
+
+	// In most signifiant -> to least significant order
+	firstNibble := upperByte >> 4
+	secondNibble := upperByte & 0xF
+	thirdNibble := lowerByte >> 4
+	fourthNibble := lowerByte & 0xF
 
 	mmm := opcode & 0xFFF
 	// xy := opcode & 0xFF0
 
-	var x, y uint8
-	var kk byte
+	x := secondNibble
+	y := thirdNibble
+	kk := lowerByte
 
-	lowerByte := opcode & 0x00FF
+	log.Printf("UB: %s LB: %s", HexOfByte(upperByte), HexOfByte(lowerByte))
 
-	log.Printf("First Nibble: %s", HexOf(firstNibble))
+	log.Printf("FstN: %s SN: %s TN: %s FthN: %s", HexOfByte(firstNibble), HexOfByte(secondNibble), HexOfByte(thirdNibble), HexOfByte(fourthNibble))
 
 	// NOP
 	if opcode == 0 {
@@ -186,7 +194,6 @@ func (vm *VM) executeOpcode(opcode uint16) {
 			// 8xy5
 			vm.add_reg(x, y)
 		}
-
 		// is there as 6 as well?
 
 	} else if firstNibble == 9 {
