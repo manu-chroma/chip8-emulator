@@ -59,6 +59,13 @@ func (vm *VM) ReadOpcode() (uint16, error) {
 
 	// pick out program counter
 	pc := cpu.programCounter
+
+	log.Printf("Curr PC val: %d", pc)
+
+	// if pc+1 >= uint16(memory.romSize) {
+	// 	return 0, errors.New("Rom file completely read")
+	// }
+
 	// no need to off-set since we read the rom
 	// directly at the start of memory.ram buffer
 	// instead of 0x0200
@@ -88,6 +95,11 @@ func (vm *VM) Tick() {
 	opcode, err := vm.ReadOpcode()
 
 	if err != nil {
+		// figure out a way to more gracefully
+		// end the program when ROM execution is
+		// completed
+		// or we can have a special opcode for that
+		// but that would be messing with the spec
 		log.Fatal(err)
 	}
 

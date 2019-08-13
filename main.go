@@ -18,7 +18,7 @@ func main() {
 	// parse the rom file
 	args := os.Args
 
-	// pick the las
+	// pick the last
 	romFilePath := args[len(args)-1]
 	log.Printf("Provided rom filepath: %s", romFilePath)
 
@@ -28,11 +28,11 @@ func main() {
 	// create VM
 	vm := InitVM(&conf)
 
-	log.Println("Rom file: ", vm.memory.ram[:vm.memory.romSize])
+	log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
 
 	for {
 		vm.Tick()
-		var t = (2 * 1000 * time.Duration(1e6))
+		var t = (2 * 100 * time.Duration(1e6))
 		time.Sleep(t)
 	}
 }

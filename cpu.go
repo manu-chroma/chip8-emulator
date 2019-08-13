@@ -44,7 +44,8 @@ func newCPU() *CPU {
 
 	log.Print("Initing CPU..")
 
-	cpu := new(CPU)
+	cpu := &CPU{
+		programCounter: ProgramAreaStart}
 	cpu.delay = 0
 
 	return cpu

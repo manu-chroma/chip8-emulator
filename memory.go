@@ -60,9 +60,11 @@ func (m *Memory) LoadRomFile(romFilePath string) {
 
 	// src -> destiantion
 	// todo: check if this can be improved
-	copy(m.ram[:], buf.Bytes()[:])
+	copy(m.ram[ProgramAreaStart:], buf.Bytes()[:])
 
 	m.romSize = buf.Len() // expressed as no. of bytes
+
+	log.Printf("Rom buffer size is: %d", m.romSize)
 
 	log.Println("Sucessfully copied rom file into ram buffer")
 }
