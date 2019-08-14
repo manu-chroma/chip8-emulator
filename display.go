@@ -43,7 +43,7 @@ func (scr *Screen) clearDisplay() {
 		}
 	}
 
-	// BufferToScreen() here
+	BufferToScreen(scr)
 }
 
 // NewDisplay ...
@@ -112,6 +112,11 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 			case paint.Event:
 				log.Print("Paint event, re-painting the buffer..")
+				// resize image
+				// dim2 := image.Point{Col * 2, Row * 2}
+				// newBuff, _ := s.NewBuffer(dim2)
+				// newImage := resize.Resize(Row*2, Col*2, drawBuff.RGBA(), resize.Lanczos3)
+				// _ = jpeg.Encode(newBuff, newImage, nil)
 				window.Upload(image.Point{}, drawBuff, drawBuff.Bounds())
 				window.Publish()
 

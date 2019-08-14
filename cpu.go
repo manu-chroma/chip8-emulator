@@ -7,7 +7,7 @@ type CPU struct {
 	// Used to store memory addresses
 	// only lowest (rightmost) 12 bits are used
 	// since the capacity of RAM is 4k
-	registerI, registerVF uint16
+	registerI uint16
 
 	// delay and sound timer
 	delay, sound byte

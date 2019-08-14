@@ -8,6 +8,7 @@ import (
 	"golang.org/x/mobile/event/key"
 )
 
+// ErrOpcodeNotImplemented ...
 var ErrOpcodeNotImplemented = errors.New("Opcode not implemented yet!")
 
 // VM ...
@@ -65,18 +66,12 @@ func (vm *VM) ReadOpcode() (uint16, error) {
 
 	log.Printf("Curr PC val: %d", pc)
 
-	// if pc+1 >= uint16(memory.romSize) {
-	// 	return 0, errors.New("Rom file completely read")
-	// }
-
-	// no need to off-set since we read the rom
-	// directly at the start of memory.ram buffer
-	// instead of 0x0200
-	// pc += 0x200
+	// no need to off-set since we directly map
+	// the rom data at 0x200 in the memory.ram buffer
+	// and init the PC with 0x200 val
 
 	// read two bytes of data and concat
-	// this approach works as well, but found a better
-	// direct function call to do the same
+	// (what's happening in the function call)
 	// op1 := memory.ram[pc]
 	// op2 := memory.ram[pc+1]
 	// concat the 2 bytes of code
@@ -250,9 +245,11 @@ func (vm *VM) executeOpcode(opcode uint16) {
 			// Fx1E
 			vm.add_i(x)
 		} else if lowerByte == 0x29 {
-			log.Fatal(ErrOpcodeNotImplemented)
+			// Fx29
+			vm.ld_font(x)
 		} else if lowerByte == 0x33 {
-			log.Fatal(ErrOpcodeNotImplemented)
+			// Fx33
+			vm.bcd_ld(x)
 		} else if lowerByte == 0x55 {
 			// Fx55
 			vm.ld_i_to_vx(x)
@@ -261,5 +258,4 @@ func (vm *VM) executeOpcode(opcode uint16) {
 			vm.ld_vx(x)
 		}
 	}
-
 }

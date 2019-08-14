@@ -1,6 +1,9 @@
 package main
 
-import "log"
+import (
+	"log"
+	"strconv"
+)
 
 // Contains CHIP-8 instruction set of 36 instructions
 
@@ -23,7 +26,7 @@ import "log"
 // Clear display
 func (vm *VM) cls() {
 	scr := vm.screen
-	log.Printf("CLEARING DISPLAY")
+	log.Printf("Clearing display")
 	scr.clearDisplay()
 }
 
@@ -32,7 +35,7 @@ func (vm *VM) cls() {
 func (vm *VM) ret() {
 
 	cpu := vm.cpu
-	log.Printf("RETURNING from sub-routine: PC: %d and SP: %d", cpu.programCounter, cpu.stackPointer)
+	log.Printf("Returning from sub-routine: PC: %d and SP: %d", cpu.programCounter, cpu.stackPointer)
 	// todo: throwing error
 	cpu.programCounter = cpu.stack[cpu.stackPointer]
 	cpu.stackPointer--
@@ -87,8 +90,6 @@ func (vm *VM) se_not(x uint8, kk byte) {
 	log.Printf("SKIP NXT INS if Vx != kk, Vx: %d and kk: %d", cpu.register[x], kk)
 
 	if cpu.register[x] != kk {
-		// skipping two because the instruction is of 2
-		// bytes size
 		cpu.programCounter += 2
 	}
 }
@@ -167,20 +168,19 @@ func (vm *VM) xor(vx, vy uint8) {
 // bits (i.e., > 255,) VF is set to 1, otherwise 0. Only the lowest 8 bits of the
 // result are kept, and stored in Vx.
 func (vm *VM) add_reg(vx, vy uint8) {
-	// todo
 	cpu := vm.cpu
 	tmp := uint16(cpu.register[vx]) + uint16(cpu.register[vy])
 
 	MAX := uint16(255)
 
 	if tmp > MAX {
-		cpu.registerVF = 1
+		cpu.register[0xF] = 1
 	} else {
-		cpu.registerVF = 0
+		cpu.register[0xF] = 0
 	}
 
 	// todo: verify that in case of overflow, only the lowest
-	// 8bits are kept
+	// 8bits are kept or module 256 is happening
 	// todo: write better implementation
 	cpu.register[vx] += cpu.register[vy]
 }
@@ -190,14 +190,14 @@ func (vm *VM) add_reg(vx, vy uint8) {
 //
 // If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx,
 // and the results stored in Vx.
-// @verify @not-tested
+// @verify @not-tested @check
 func (vm *VM) sub_reg(vx, vy uint8) {
 	cpu := vm.cpu
 
 	if cpu.register[vx] > cpu.register[vy] {
-		cpu.registerVF = 1
+		cpu.register[0xF] = 1
 	} else {
-		cpu.registerVF = 0
+		cpu.register[0xF] = 0
 	}
 
 	cpu.register[vx] -= cpu.register[vy]
@@ -211,25 +211,46 @@ func (vm *VM) shr(vx, vy uint8) {
 	cpu := vm.cpu
 
 	if cpu.register[vx]&1 == 1 {
-		cpu.registerVF = 1
+		cpu.register[0xF] = 1
 	} else {
-		cpu.registerVF = 0
+		cpu.register[0xF] = 0
 	}
 
-	cpu.register[vx] /= 2
+	cpu.register[vx] /= 2 // same as right shift 1
 }
 
 // 8xy7 - SUBN Vx, Vy
 // Set Vx = Vy - Vx, set VF = NOT borrow.
 
 // If Vy > Vx, then VF is set to 1, otherwise 0. Then Vx is subtracted from Vy, and the results stored in Vx.
+func (vm *VM) subn(x, y uint8) {
+	cpu := vm.cpu
 
-// TODO
+	if cpu.register[y] > cpu.register[x] {
+		cpu.register[0xF] = 1
+	} else {
+		cpu.register[0xF] = 0
+	}
+
+	cpu.register[x] = cpu.register[y] - cpu.register[x]
+}
 
 // 8xyE - SHL Vx {, Vy}
 // Set Vx = Vx SHL 1.
+// If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
+// Then Vx is multiplied by 2.
+func (vm *VM) shl(vx, vy uint8) {
+	cpu := vm.cpu
 
-// If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0. Then Vx is multiplied by 2.
+	// todo: @check check for most significant bit instead
+	if cpu.register[vx]&1 == 1 {
+		cpu.register[0xF] = 1
+	} else {
+		cpu.register[0xF] = 0
+	}
+
+	cpu.register[vx] *= 2
+}
 
 // 9xy0 - SNE Vx, Vy
 // Skip next instruction if Vx != Vy.
@@ -263,9 +284,9 @@ func (vm *VM) jp_add(addr uint16) {
 func (vm *VM) rnd(vx uint8, kk byte) {
 	cpu := vm.cpu
 
-	// todo: can we improve the rand here
+	// @improve: can we improve the rand here
 	// also, need to @test this
-	cpu.register[vx] = uint8(RandInRange(0, 256)) & kk
+	cpu.register[vx] = byte(RandInRange(0, 256)) & kk
 }
 
 // Dxyn - DRW Vx, Vy, nibble
@@ -273,12 +294,26 @@ func (vm *VM) rnd(vx uint8, kk byte) {
 
 // The interpreter reads n bytes from memory, starting at the address stored in I. These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen. See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
 func (vm *VM) drw(x, y uint8, n uint8) {
+	cpu := vm.cpu
+	// screen := vm.screen
+	memory := vm.memory
+
+	// copy the content to be printed in a tmp buffer
+	// todo: take a slice of underlying memory instead?
+	buf := make([]byte, n)
+	startAddr := cpu.registerI
+	for i := uint8(0); i < n; i++ {
+		buf[i] = memory.ram[startAddr]
+		startAddr++
+	}
+
+	// how to write a byte at a given co-coordinate
+	// screen.display
 	// todo
 }
 
 // Ex9E - SKP Vx
 // Skip next instruction if key with the value of Vx is pressed.
-
 // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
 func (vm *VM) skp(vx uint8) {
 	cpu := vm.cpu
@@ -366,13 +401,32 @@ func (vm *VM) add_i(vx uint8) {
 
 // Fx29 - LD F, Vx
 // Set I = location of sprite for digit Vx.
-
 // The value of I is set to the location for the hexadecimal sprite corresponding to the value of Vx. See section 2.4, Display, for more information on the Chip-8 hexadecimal font.
+func (vm *VM) ld_font(x uint8) {
+	cpu := vm.cpu
+
+	digit := cpu.register[x]
+	// offset of 5 bytes per digit, refer to chip8Fontset in memory.go
+	cpu.registerI = uint16(DigitSpriteDataStart) + uint16(5*digit)
+}
 
 // Fx33 - LD B, Vx
 // Store BCD representation of Vx in memory locations I, I+1, and I+2.
 
 // The interpreter takes the decimal value of Vx, and places the hundreds digit in memory at location in I, the tens digit at location I+1, and the ones digit at location I+2.
+// @supershaddy impl, not sure if this works or not
+func (vm *VM) bcd_ld(x uint8) {
+	cpu := vm.cpu
+	// decimal := cpu.register[x]
+	// TODO
+	vxData := cpu.register[x]
+
+	revNum := Reverse(strconv.Itoa(int(vxData)))
+	for idx, i := range revNum {
+		res, _ := strconv.ParseUint(strconv.QuoteRune(i), 10, 8)
+		cpu.register[idx] = byte(res)
+	}
+}
 
 // Fx55 - LD [I], Vx
 // Store registers V0 through Vx in memory starting at location I.
@@ -399,7 +453,7 @@ func (vm *VM) ld_vx(vx uint8) {
 	}
 }
 
-// @future Opcode management in this way will help
+// Opcode ... @future management in this way will help
 // us avoid ugly switch case, but I will probably
 // implement this in next improvement
 type Opcode struct {

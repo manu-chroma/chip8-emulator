@@ -45,3 +45,11 @@ func HexOf(num uint16) string {
 func HexOfByte(num byte) string {
 	return fmt.Sprintf("%x", num)
 }
+
+// Reverse a string
+func Reverse(s string) (result string) {
+	for _, v := range s {
+		result = string(v) + result
+	}
+	return
+}

@@ -6,8 +6,7 @@ import (
 	"time"
 )
 
-/// Refer to: http://devernay.free.fr/hacks/chip8/C8TECH10.HTM
-/// for good CHIP-8 reference mannual
+/// Refer to: http://mattmik.com/files/chip8/mastering/chip8.html
 
 func main() {
 
@@ -27,6 +26,9 @@ func main() {
 
 	// create VM
 	vm := InitVM(&conf)
+
+	// @hack: @fix sleep for 2 seconds to ensure the window is up and running
+	time.Sleep(2 * 1000 * time.Duration(1e6))
 
 	log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
 
