@@ -298,18 +298,32 @@ func (vm *VM) drw(x, y uint8, n uint8) {
 	// screen := vm.screen
 	memory := vm.memory
 
-	// copy the content to be printed in a tmp buffer
 	// todo: take a slice of underlying memory instead?
 	buf := make([]byte, n)
 	startAddr := cpu.registerI
-	for i := uint8(0); i < n; i++ {
-		buf[i] = memory.ram[startAddr]
-		startAddr++
+
+	// read N byte sprite data into buf
+	for i := uint16(0); i < uint16(n); i++ {
+		buf[i] = memory.ram[startAddr+i]
 	}
 
-	// how to write a byte at a given co-coordinate
-	// screen.display
-	// todo
+	// todo: wrapping logic
+
+	scr := vm.screen
+	// reset collision register
+	cpu.register[0xF] = 0
+	// display and update collision flag
+	for j := y; j < y+n; j++ {
+		// spread each byte as 8 bits // test
+		for i := uint8(0); i < 8; i++ {
+			res := int((buf[j-y] >> i) & 1)
+			if scr.display[x][y] == 1 && res == 0 {
+				cpu.register[0xF] = 1
+			}
+			scr.display[x][y] = res
+		}
+	}
+
 }
 
 // Ex9E - SKP Vx
@@ -426,6 +440,14 @@ func (vm *VM) bcd_ld(x uint8) {
 		res, _ := strconv.ParseUint(strconv.QuoteRune(i), 10, 8)
 		cpu.register[idx] = byte(res)
 	}
+
+	// memory := vm.memory
+	//
+	// memory.ram[I] = (byte)(cpu_V[(opcode&0x0F00)>>8] / 100)
+	// memory[I+1] = (byte)((cpu_V[(opcode&0x0F00)>>8] / 10) % 10)
+	// memory[I+2] = (byte)((cpu_V[(opcode&0x0F00)>>8] % 100) % 10)
+	// pc += 2
+	// break
 }
 
 // Fx55 - LD [I], Vx

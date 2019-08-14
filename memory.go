@@ -88,15 +88,12 @@ func (m *Memory) LoadRomFile(romFilePath string) {
 	log.Println("Sucessfully copied rom file into ram buffer")
 }
 
-// copy
+// copy fontset into RAM
 func setDigitDataInRAM(m *Memory) {
 
-	startAddr := DigitSpriteDataStart
 	for i := 0; i < 80; i++ {
-		m.ram[startAddr] = chip8Fontset[i]
-		startAddr++
+		m.ram[i] = chip8Fontset[i]
 	}
 
 	log.Print("Completed copying of chip8Fontset in the RAM memory")
-	log.Printf("Current value of startAddr is: %s", HexOf(uint16(startAddr)))
 }

@@ -17,8 +17,10 @@ import (
 // A sprite is a group of bytes which are a binary representation of the desired picture.
 // Chip-8 sprites can be up to 15 bytes, for a possible sprite size of 8x15
 const (
-	Row = 300
-	Col = 600
+	WinRow = 300
+	WinCol = 600
+	EmuRow = 32
+	EmuCol = 64
 )
 
 // Colors
@@ -30,16 +32,16 @@ var (
 
 // Screen ...
 type Screen struct {
-	display    [Row][Col]bool
+	display    [EmuRow][EmuCol]int
 	window     screen.Window
 	backBuffer screen.Buffer
 }
 
 func (scr *Screen) clearDisplay() {
 
-	for i := 0; i < Row; i++ {
-		for j := 0; j < Col; j++ {
-			scr.display[i][j] = false
+	for i := 0; i < EmuRow; i++ {
+		for j := 0; j < EmuCol; j++ {
+			scr.display[i][j] = 0
 		}
 	}
 
@@ -56,8 +58,8 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 	// create a separate
 	go driver.Main(func(s screen.Screen) {
 		opts := screen.NewWindowOptions{
-			Height: Row,
-			Width:  Col,
+			Height: WinRow,
+			Width:  WinCol,
 			Title:  "Chip-8 VM",
 		}
 
@@ -72,7 +74,7 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 		// create basic gradient
 		// @bug why are we needing col * 2 rather than col?
-		dim := image.Point{Col, Row}
+		dim := image.Point{EmuCol, EmuRow}
 		drawBuff, err := s.NewBuffer(dim)
 
 		scr.window = window
@@ -138,29 +140,15 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 func BufferToScreen(scr *Screen) {
 	// This assumes that there has been updates to the current buffer
 	// and now we are ready to refresh the display
-	// todo: maybe we will need a back and front: separate buffers
-	// for collision detection @discuss
 
 	img := scr.backBuffer.RGBA()
 	b := img.Bounds()
 
 	log.Printf("Bounds: %s", b)
 
-	// update the display and
-	// support the collision logic too
-	// for x := b.Min.X; x < b.Max.X; x++ {
-	// 	for y := b.Min.Y; y < b.Max.Y; y++ {
-	// 		if scr.display[x][y] == true {
-	// 			img.SetRGBA(x, y, White)
-	// 		} else {
-	// 			img.SetRGBA(x, y, Black)
-	// 		}
-	// 	}
-	// }
-
-	for x := 0; x < Row; x++ {
-		for y := 0; y < Col; y++ {
-			if scr.display[x][y] == true {
+	for x := 0; x < EmuRow; x++ {
+		for y := 0; y < EmuCol; y++ {
+			if scr.display[x][y] == 1 {
 				img.SetRGBA(x, y, White)
 			} else {
 				img.SetRGBA(x, y, Black)
@@ -168,7 +156,7 @@ func BufferToScreen(scr *Screen) {
 		}
 	}
 
-	// update the back-buffer
+	// send screen paint event
 	scr.window.Send(paint.Event{})
 }
 
