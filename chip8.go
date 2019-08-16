@@ -101,6 +101,10 @@ func (vm *VM) Tick() {
 		log.Fatal(err)
 	}
 
+	cpu := vm.cpu
+
+	log.Printf("Before executing Opcode: %s, PC: %d, SP: %d", HexOf(opcode), cpu.programCounter, cpu.stackPointer)
+	log.Print(cpu.register)
 	vm.executeOpcode(opcode)
 
 	log.Printf("Executed: %s", HexOf(opcode))

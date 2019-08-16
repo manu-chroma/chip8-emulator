@@ -294,6 +294,9 @@ func (vm *VM) rnd(vx uint8, kk byte) {
 
 // The interpreter reads n bytes from memory, starting at the address stored in I. These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen. See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
 func (vm *VM) drw(x, y uint8, n uint8) {
+
+	log.Print("Drawing sprite data...")
+
 	cpu := vm.cpu
 	// screen := vm.screen
 	memory := vm.memory
@@ -312,17 +315,25 @@ func (vm *VM) drw(x, y uint8, n uint8) {
 	scr := vm.screen
 	// reset collision register
 	cpu.register[0xF] = 0
+
 	// display and update collision flag
-	for j := y; j < y+n; j++ {
-		// spread each byte as 8 bits // test
+	// j for height of the buffer
+	for j := uint8(0); j < n; j++ {
+
+		// spread each byte as 8 bits @test
 		for i := uint8(0); i < 8; i++ {
-			res := int((buf[j-y] >> i) & 1)
-			if scr.display[x][y] == 1 && res == 0 {
+
+			res := int((buf[j] >> i) & 1)
+
+			if scr.display[y+j][x+i] == 1 && res == 0 {
 				cpu.register[0xF] = 1
 			}
-			scr.display[x][y] = res
+
+			scr.display[y+j][x+i] = res
 		}
 	}
+
+	BufferToScreen(scr)
 
 }
 

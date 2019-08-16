@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"image/draw"
 	"log"
 
 	"golang.org/x/mobile/event/paint"
@@ -32,15 +33,15 @@ var (
 
 // Screen ...
 type Screen struct {
-	display    [EmuRow][EmuCol]int
+	display    [EmuCol][EmuRow]int
 	window     screen.Window
 	backBuffer screen.Buffer
 }
 
 func (scr *Screen) clearDisplay() {
 
-	for i := 0; i < EmuRow; i++ {
-		for j := 0; j < EmuCol; j++ {
+	for i := 0; i < EmuCol; i++ {
+		for j := 0; j < EmuRow; j++ {
 			scr.display[i][j] = 0
 		}
 	}
@@ -54,6 +55,8 @@ func (scr *Screen) clearDisplay() {
 func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 	scr := &Screen{}
+	// @refactor
+	scale := 5
 
 	// create a separate
 	go driver.Main(func(s screen.Screen) {
@@ -114,12 +117,17 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 			case paint.Event:
 				log.Print("Paint event, re-painting the buffer..")
-				// resize image
-				// dim2 := image.Point{Col * 2, Row * 2}
-				// newBuff, _ := s.NewBuffer(dim2)
-				// newImage := resize.Resize(Row*2, Col*2, drawBuff.RGBA(), resize.Lanczos3)
-				// _ = jpeg.Encode(newBuff, newImage, nil)
-				window.Upload(image.Point{}, drawBuff, drawBuff.Bounds())
+
+				tex, _ := s.NewTexture(dim)
+				tex.Upload(image.Point{}, drawBuff, drawBuff.Bounds())
+
+				log.Print("Texture created!")
+
+				scaledDim := image.Rectangle{
+					image.Point{0, 0},
+					image.Point{EmuCol * scale, EmuRow * scale}}
+
+				window.Scale(scaledDim, tex, drawBuff.Bounds(), draw.Over, &screen.DrawOptions{})
 				window.Publish()
 
 			case error:
@@ -129,9 +137,6 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 		}
 	})
 
-	log.Println("returning from NewDisplay method..")
-
-	// return this dummy buffer for the time being
 	return scr
 }
 
@@ -146,8 +151,8 @@ func BufferToScreen(scr *Screen) {
 
 	log.Printf("Bounds: %s", b)
 
-	for x := 0; x < EmuRow; x++ {
-		for y := 0; y < EmuCol; y++ {
+	for x := 0; x < EmuCol; x++ {
+		for y := 0; y < EmuRow; y++ {
 			if scr.display[x][y] == 1 {
 				img.SetRGBA(x, y, White)
 			} else {
@@ -156,7 +161,6 @@ func BufferToScreen(scr *Screen) {
 		}
 	}
 
-	// send screen paint event
 	scr.window.Send(paint.Event{})
 }
 
