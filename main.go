@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-/// Refer to: http://mattmik.com/files/chip8/mastering/chip8.html
+// Refer to: http://mattmik.com/files/chip8/mastering/chip8.html
 
 func main() {
 
@@ -30,7 +30,7 @@ func main() {
 	// @hack: @fix sleep for 2 seconds to ensure the window is up and running
 	time.Sleep(2 * 1000 * time.Duration(1e6))
 
-	// todo: don't crash at this line if no rom is loaded 
+	// todo: don't crash at this line if no rom is loaded
 	log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
 
 	// TODO: the screen should be running in the main go thread.
@@ -38,7 +38,7 @@ func main() {
 
 	for {
 		vm.Tick()
-		var t = (2 * 100 * time.Duration(1e6))
+		var t = 5 * 100 * time.Duration(1e6)
 		time.Sleep(t)
 	}
 

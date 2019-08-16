@@ -82,7 +82,9 @@ func (vm *VM) ReadOpcode() (uint16, error) {
 	hexRep := HexOf(opcode)
 	log.Printf("**** Identified opcode :: %s ****\n", hexRep)
 
-	cpu.programCounter += 2
+	// PC will be incremented inside opcodes,
+	// for better locality of the instruction exec logic
+	// cpu.programCounter += 2
 
 	return opcode, nil
 }

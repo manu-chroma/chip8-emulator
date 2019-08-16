@@ -26,8 +26,11 @@ import (
 // Clear display
 func (vm *VM) cls() {
 	scr := vm.screen
-	log.Printf("Clearing display")
+	log.Print("Clearing display")
 	scr.clearDisplay()
+	BufferToScreen(scr)
+
+	vm.IncrementPC()
 }
 
 // 00EE - RET
@@ -37,8 +40,10 @@ func (vm *VM) ret() {
 	cpu := vm.cpu
 	log.Printf("Returning from sub-routine: PC: %d and SP: %d", cpu.programCounter, cpu.stackPointer)
 	// todo: throwing error
-	cpu.programCounter = cpu.stack[cpu.stackPointer]
 	cpu.stackPointer--
+	cpu.programCounter = cpu.stack[cpu.stackPointer]
+
+	vm.IncrementPC()
 }
 
 // 1nnn - JP addr
@@ -51,8 +56,7 @@ func (vm *VM) jp(nnn uint16) {
 }
 
 // 2nnn - CALL addr
-// The interpreter increments the stack pointer, then puts
-// the current PC on the top of the stack. The PC is then
+// Puts the current PC on the top of the stack. The PC is then
 // set to nnn.
 func (vm *VM) call(nnn uint16) {
 	// should we validate the addr before setting it
@@ -60,8 +64,9 @@ func (vm *VM) call(nnn uint16) {
 
 	log.Printf("CALL %d and PC: %d and SP: %d", nnn, cpu.programCounter, cpu.stackPointer)
 
-	cpu.stackPointer++
 	cpu.stack[cpu.stackPointer] = cpu.programCounter
+	cpu.stackPointer++
+
 	cpu.programCounter = nnn
 }
 
@@ -74,9 +79,10 @@ func (vm *VM) se(x uint8, kk byte) {
 	log.Printf("SKIP NXT INS if Vx == kk, Vx: %d and kk: %d", cpu.register[x], kk)
 
 	if cpu.register[x] == kk {
-		// skipping two because the instruction is of 2
-		// bytes size
-		cpu.programCounter += 2
+		// skipping ins
+		cpu.programCounter += 4
+	} else {
+		vm.IncrementPC()
 	}
 
 }
@@ -90,7 +96,9 @@ func (vm *VM) se_not(x uint8, kk byte) {
 	log.Printf("SKIP NXT INS if Vx != kk, Vx: %d and kk: %d", cpu.register[x], kk)
 
 	if cpu.register[x] != kk {
-		cpu.programCounter += 2
+		cpu.programCounter += 4
+	} else {
+		vm.IncrementPC()
 	}
 }
 
@@ -104,7 +112,9 @@ func (vm *VM) se_reg(x, y uint8) {
 	if cpu.register[x] == cpu.register[y] {
 		// skipping two because the instruction is of 2
 		// bytes size
-		cpu.programCounter += 2
+		cpu.programCounter += 4
+	} else {
+		vm.IncrementPC()
 	}
 }
 
@@ -114,6 +124,8 @@ func (vm *VM) ld(vx uint8, data byte) {
 	cpu := vm.cpu
 	log.Printf("LD byte: %d to Vx: %d", data, vx)
 	cpu.register[vx] = data
+
+	vm.IncrementPC()
 }
 
 // 7xkk - ADD Vx, byte
@@ -122,6 +134,8 @@ func (vm *VM) add(vx uint8, data byte) {
 	cpu := vm.cpu
 	log.Printf("ADD-ING byte: %d to Vx: %d", data, cpu.register[vx])
 	cpu.register[vx] += data
+
+	vm.IncrementPC()
 }
 
 // 8xy0 - LD Vx, Vy
@@ -130,6 +144,8 @@ func (vm *VM) ld_reg(vx, vy uint8) {
 	cpu := vm.cpu
 	log.Printf("LD data from Vy: %d to Vx: %d", vy, vx)
 	cpu.register[vx] = cpu.register[vy]
+
+	vm.IncrementPC()
 }
 
 // 8xy1 - OR Vx, Vy
@@ -137,9 +153,9 @@ func (vm *VM) ld_reg(vx, vy uint8) {
 func (vm *VM) or(vx, vy uint8) {
 	cpu := vm.cpu
 
-	vxData := cpu.register[vx]
-	vyData := cpu.register[vy]
-	cpu.register[vx] = vxData | vyData
+	cpu.register[vx] |= cpu.register[vy]
+
+	vm.IncrementPC()
 }
 
 // 8xy2 - AND Vx, Vy
@@ -147,9 +163,9 @@ func (vm *VM) or(vx, vy uint8) {
 func (vm *VM) and(vx, vy uint8) {
 	cpu := vm.cpu
 
-	vxData := cpu.register[vx]
-	vyData := cpu.register[vy]
-	cpu.register[vx] = vxData & vyData
+	cpu.register[vx] &= cpu.register[vy]
+
+	vm.IncrementPC()
 }
 
 // 8xy3 - XOR Vx, Vy
@@ -157,9 +173,9 @@ func (vm *VM) and(vx, vy uint8) {
 func (vm *VM) xor(vx, vy uint8) {
 	cpu := vm.cpu
 
-	vxData := cpu.register[vx]
-	vyData := cpu.register[vy]
-	cpu.register[vx] = vxData ^ vyData
+	cpu.register[vx] ^= cpu.register[vy]
+
+	vm.IncrementPC()
 }
 
 // 8xy4 - ADD Vx, Vy
@@ -183,6 +199,8 @@ func (vm *VM) add_reg(vx, vy uint8) {
 	// 8bits are kept or module 256 is happening
 	// todo: write better implementation
 	cpu.register[vx] += cpu.register[vy]
+
+	vm.IncrementPC()
 }
 
 // 8xy5 - SUB Vx, Vy
@@ -190,7 +208,7 @@ func (vm *VM) add_reg(vx, vy uint8) {
 //
 // If Vx > Vy, then VF is set to 1, otherwise 0. Then Vy is subtracted from Vx,
 // and the results stored in Vx.
-// @verify @not-tested @check
+// @verify @check
 func (vm *VM) sub_reg(vx, vy uint8) {
 	cpu := vm.cpu
 
@@ -201,6 +219,8 @@ func (vm *VM) sub_reg(vx, vy uint8) {
 	}
 
 	cpu.register[vx] -= cpu.register[vy]
+
+	vm.IncrementPC()
 }
 
 // 8xy6 - SHR Vx {, Vy}
@@ -217,6 +237,8 @@ func (vm *VM) shr(vx, vy uint8) {
 	}
 
 	cpu.register[vx] /= 2 // same as right shift 1
+
+	vm.IncrementPC()
 }
 
 // 8xy7 - SUBN Vx, Vy
@@ -233,6 +255,8 @@ func (vm *VM) subn(x, y uint8) {
 	}
 
 	cpu.register[x] = cpu.register[y] - cpu.register[x]
+
+	vm.IncrementPC()
 }
 
 // 8xyE - SHL Vx {, Vy}
@@ -250,6 +274,8 @@ func (vm *VM) shl(vx, vy uint8) {
 	}
 
 	cpu.register[vx] *= 2
+
+	vm.IncrementPC()
 }
 
 // 9xy0 - SNE Vx, Vy
@@ -258,7 +284,9 @@ func (vm *VM) sne(vx, vy uint8) {
 	cpu := vm.cpu
 
 	if cpu.register[vx] != cpu.register[vy] {
-		cpu.programCounter += 2
+		cpu.programCounter += 4
+	} else {
+		vm.IncrementPC()
 	}
 }
 
@@ -268,6 +296,8 @@ func (vm *VM) ld_i(addr uint16) {
 	cpu := vm.cpu
 	log.Printf("LD: Loading addr %d into register I", addr)
 	cpu.registerI = addr
+
+	vm.IncrementPC()
 }
 
 // Bnnn - JP V0, addr
@@ -276,6 +306,8 @@ func (vm *VM) jp_add(addr uint16) {
 	cpu := vm.cpu
 
 	cpu.programCounter = addr + uint16(cpu.register[0])
+
+	vm.IncrementPC()
 }
 
 // Cxkk - RND Vx, byte
@@ -287,54 +319,61 @@ func (vm *VM) rnd(vx uint8, kk byte) {
 	// @improve: can we improve the rand here
 	// also, need to @test this
 	cpu.register[vx] = byte(RandInRange(0, 256)) & kk
+
+	vm.IncrementPC()
 }
 
 // Dxyn - DRW Vx, Vy, nibble
 // Display n-byte sprite starting at memory location I at (Vx, Vy), set VF = collision.
 
 // The interpreter reads n bytes from memory, starting at the address stored in I. These bytes are then displayed as sprites on screen at coordinates (Vx, Vy). Sprites are XORed onto the existing screen. If this causes any pixels to be erased, VF is set to 1, otherwise it is set to 0. If the sprite is positioned so part of it is outside the coordinates of the display, it wraps around to the opposite side of the screen. See instruction 8xy3 for more information on XOR, and section 2.4, Display, for more information on the Chip-8 screen and sprites.
-func (vm *VM) drw(x, y uint8, n uint8) {
-
-	log.Print("Drawing sprite data...")
+func (vm *VM) drw(vx, vy uint8, n uint8) {
 
 	cpu := vm.cpu
-	// screen := vm.screen
 	memory := vm.memory
 
-	// todo: take a slice of underlying memory instead?
+	x := cpu.register[vx]
+	y := cpu.register[vy]
+	height := n
+
+	log.Printf("Drawing sprite at x: %d, y:%d", x, y)
+
+	// @refactor: Take a slice of underlying memory instead?
 	buf := make([]byte, n)
 	startAddr := cpu.registerI
 
-	// read N byte sprite data into buf
-	for i := uint16(0); i < uint16(n); i++ {
+	// read N byte sprite data into buf starting from startAddr
+	for i := uint16(0); i < uint16(height); i++ {
 		buf[i] = memory.ram[startAddr+i]
 	}
 
 	// todo: wrapping logic
 
 	scr := vm.screen
+
 	// reset collision register
 	cpu.register[0xF] = 0
 
 	// display and update collision flag
 	// j for height of the buffer
-	for j := uint8(0); j < n; j++ {
+	for j := uint8(0); j < height; j++ {
 
 		// spread each byte as 8 bits @test
 		for i := uint8(0); i < 8; i++ {
 
 			res := int((buf[j] >> i) & 1)
 
-			if scr.display[y+j][x+i] == 1 && res == 0 {
+			if scr.display[y+j][x+(8-i-1)] == 1 && res == 0 {
 				cpu.register[0xF] = 1
 			}
 
-			scr.display[y+j][x+i] = res
+			scr.display[y+j][x+(8-i-1)] = res
 		}
 	}
 
 	BufferToScreen(scr)
 
+	vm.IncrementPC()
 }
 
 // Ex9E - SKP Vx
@@ -354,8 +393,19 @@ func (vm *VM) skp(vx uint8) {
 		return
 	}
 
+	for {
+		keyEvent := <-vm.keyboardEvents
+		val, err = Chip8Key(keyEvent.Code)
+
+		if err == nil {
+			break
+		}
+	}
+
 	if vxData == val {
 		cpu.programCounter += 2
+	} else {
+		vm.IncrementPC()
 	}
 }
 
@@ -376,8 +426,19 @@ func (vm *VM) sknp(vx uint8) {
 		return
 	}
 
+	for {
+		keyEvent := <-vm.keyboardEvents
+		val, err = Chip8Key(keyEvent.Code)
+
+		if err == nil {
+			break
+		}
+	}
+
 	if vxData != val {
 		cpu.programCounter += 2
+	} else {
+		vm.IncrementPC()
 	}
 }
 
@@ -387,6 +448,8 @@ func (vm *VM) ld_dt_in_vx(vx uint8) {
 	cpu := vm.cpu
 
 	cpu.register[vx] = cpu.delay
+
+	vm.IncrementPC()
 }
 
 // Fx0A - LD Vx, K
@@ -395,8 +458,10 @@ func (vm *VM) ld_dt_in_vx(vx uint8) {
 func (vm *VM) ld_key(vx uint8) {
 	cpu := vm.cpu
 	key := <-vm.keyboardEvents
-	// todo: test and not ignore error?
+	// todo: do not ignore error?
 	cpu.register[vx], _ = Chip8Key(key.Code)
+
+	vm.IncrementPC()
 }
 
 // Fx15 - LD DT, Vx
@@ -405,6 +470,8 @@ func (vm *VM) ld_dt(vx uint8) {
 	cpu := vm.cpu
 
 	cpu.delay = cpu.register[vx]
+
+	vm.IncrementPC()
 }
 
 // Fx18 - LD ST, Vx
@@ -413,15 +480,21 @@ func (vm *VM) ld_st(vx uint8) {
 	cpu := vm.cpu
 
 	cpu.sound = cpu.register[vx]
+
+	vm.IncrementPC()
 }
 
 // Fx1E - ADD I, Vx
 // Set I = I + Vx.
 // The values of I and Vx are added, and the results are stored in I.
 func (vm *VM) add_i(vx uint8) {
+	// todo: handle overflow here
+
 	cpu := vm.cpu
 
 	cpu.registerI = uint16(cpu.register[vx]) + cpu.registerI
+
+	vm.IncrementPC()
 }
 
 // Fx29 - LD F, Vx
@@ -432,7 +505,9 @@ func (vm *VM) ld_font(x uint8) {
 
 	digit := cpu.register[x]
 	// offset of 5 bytes per digit, refer to chip8Fontset in memory.go
-	cpu.registerI = uint16(DigitSpriteDataStart) + uint16(5*digit)
+	cpu.registerI = uint16(DigitSpriteDataStart) + uint16(0x5*digit)
+
+	vm.IncrementPC()
 }
 
 // Fx33 - LD B, Vx
@@ -452,6 +527,8 @@ func (vm *VM) bcd_ld(x uint8) {
 		cpu.register[idx] = byte(res)
 	}
 
+	vm.IncrementPC()
+
 	// memory := vm.memory
 	//
 	// memory.ram[I] = (byte)(cpu_V[(opcode&0x0F00)>>8] / 100)
@@ -470,7 +547,10 @@ func (vm *VM) ld_i_to_vx(vx uint8) {
 	for reg := uint8(0); reg <= vx; reg++ {
 		// reading each byte into the register
 		memory.ram[cpu.registerI] = cpu.register[reg]
+		cpu.registerI++
 	}
+
+	vm.IncrementPC()
 }
 
 // Fx65 - LD Vx, [I]
@@ -480,10 +560,20 @@ func (vm *VM) ld_vx(vx uint8) {
 	memory := vm.memory
 	addr := cpu.registerI
 
-	for reg := uint8(0); reg <= vx; reg++ {
+	for i := uint16(0); i <= uint16(vx); i++ {
 		// reading each byte into the register
-		cpu.register[reg] = memory.ram[addr]
+		cpu.register[i] = memory.ram[addr+i]
 	}
+
+	cpu.registerI += uint16(vx) + 1
+
+	vm.IncrementPC()
+}
+
+// IncrementPC makes PC point to next instruction
+func (vm *VM) IncrementPC() {
+	cpu := vm.cpu
+	cpu.programCounter += uint16(2)
 }
 
 // Opcode ... @future management in this way will help

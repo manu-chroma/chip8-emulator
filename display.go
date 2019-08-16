@@ -14,14 +14,14 @@ import (
 	"golang.org/x/mobile/event/lifecycle"
 )
 
-// we draw graphics on screen through the use of sprites.
 // A sprite is a group of bytes which are a binary representation of the desired picture.
 // Chip-8 sprites can be up to 15 bytes, for a possible sprite size of 8x15
 const (
-	WinRow = 300
-	WinCol = 600
-	EmuRow = 32
-	EmuCol = 64
+	WinHeight = 32 * 12
+	WinWidth  = 64 * 12
+	EmuHeight = 32
+	EmuWidth  = 64
+	Scale     = 10
 )
 
 // Colors
@@ -31,38 +31,35 @@ var (
 	Blue  = color.RGBA{0, 0, 255, 1.0}
 )
 
-// Screen ...
+// Screen incapsulates our display arr, window
+// and the backBuffer we're using to upload to display
 type Screen struct {
-	display    [EmuCol][EmuRow]int
+	display    [EmuHeight][EmuWidth]int // y for height, x for row
 	window     screen.Window
 	backBuffer screen.Buffer
 }
 
 func (scr *Screen) clearDisplay() {
 
-	for i := 0; i < EmuCol; i++ {
-		for j := 0; j < EmuRow; j++ {
-			scr.display[i][j] = 0
+	for j := 0; j < EmuHeight; j++ {
+		for i := 0; i < EmuWidth; i++ {
+			scr.display[j][i] = 0
 		}
 	}
-
-	BufferToScreen(scr)
 }
 
-// NewDisplay ...
+// NewDisplay returns Screen struct instance
 // We pass a sender channel to the display to pass us the mouseEvents
-// we obtain from the screen
+// which obtain from the screen
 func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 	scr := &Screen{}
-	// @refactor
-	scale := 5
 
 	// create a separate
 	go driver.Main(func(s screen.Screen) {
 		opts := screen.NewWindowOptions{
-			Height: WinRow,
-			Width:  WinCol,
+			Height: WinHeight,
+			Width:  WinWidth,
 			Title:  "Chip-8 VM",
 		}
 
@@ -75,17 +72,15 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 		defer window.Release()
 
-		// create basic gradient
-		// @bug why are we needing col * 2 rather than col?
-		dim := image.Point{EmuCol, EmuRow}
+		dim := image.Point{EmuWidth, EmuHeight}
 		drawBuff, err := s.NewBuffer(dim)
-
-		scr.window = window
-		scr.backBuffer = drawBuff
-
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer drawBuff.Release()
+
+		scr.window = window
+		scr.backBuffer = drawBuff
 
 		log.Print("Window bounds: ", opts)
 		log.Printf("Buffer bounds: %s", drawBuff.Bounds())
@@ -109,7 +104,8 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 			case key.Event:
 				log.Print("pressed key: ", e.Code)
-				// exit game
+				// todo: exit game,
+				// currently only shuts off the screen window
 				if e.Code == key.CodeEscape {
 					return
 				}
@@ -119,13 +115,13 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 				log.Print("Paint event, re-painting the buffer..")
 
 				tex, _ := s.NewTexture(dim)
-				tex.Upload(image.Point{}, drawBuff, drawBuff.Bounds())
+				defer tex.Release()
 
-				log.Print("Texture created!")
+				tex.Upload(image.Point{}, drawBuff, drawBuff.Bounds())
 
 				scaledDim := image.Rectangle{
 					image.Point{0, 0},
-					image.Point{EmuCol * scale, EmuRow * scale}}
+					image.Point{EmuWidth * Scale, EmuHeight * Scale}}
 
 				window.Scale(scaledDim, tex, drawBuff.Bounds(), draw.Over, &screen.DrawOptions{})
 				window.Publish()
@@ -141,7 +137,6 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 }
 
 // BufferToScreen puts the buffer to the window
-// todo: where to put the collision detection
 func BufferToScreen(scr *Screen) {
 	// This assumes that there has been updates to the current buffer
 	// and now we are ready to refresh the display
@@ -151,9 +146,9 @@ func BufferToScreen(scr *Screen) {
 
 	log.Printf("Bounds: %s", b)
 
-	for x := 0; x < EmuCol; x++ {
-		for y := 0; y < EmuRow; y++ {
-			if scr.display[x][y] == 1 {
+	for y := 0; y < EmuHeight; y++ {
+		for x := 0; x < EmuWidth; x++ {
+			if scr.display[y][x] == 1 {
 				img.SetRGBA(x, y, White)
 			} else {
 				img.SetRGBA(x, y, Black)
@@ -165,7 +160,6 @@ func BufferToScreen(scr *Screen) {
 }
 
 // Bounds: (0,0)-(64,32)
-
 func defaultDrawToBuffer(img *image.RGBA) {
 	b := img.Bounds()
 
@@ -183,7 +177,4 @@ func defaultDrawToBuffer(img *image.RGBA) {
 			}
 		}
 	}
-}
-
-func drawBackBuffer() {
 }
