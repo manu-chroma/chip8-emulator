@@ -2,7 +2,6 @@ package main
 
 import (
 	"log"
-	"strconv"
 )
 
 // Contains CHIP-8 instruction set of 36 instructions
@@ -39,7 +38,6 @@ func (vm *VM) ret() {
 
 	cpu := vm.cpu
 	log.Printf("Returning from sub-routine: PC: %d and SP: %d", cpu.programCounter, cpu.stackPointer)
-	// todo: throwing error
 	cpu.stackPointer--
 	cpu.programCounter = cpu.stack[cpu.stackPointer]
 
@@ -195,9 +193,7 @@ func (vm *VM) add_reg(vx, vy uint8) {
 		cpu.register[0xF] = 0
 	}
 
-	// todo: verify that in case of overflow, only the lowest
-	// 8bits are kept or module 256 is happening
-	// todo: write better implementation
+	// 8bits are kept(?!) or modulo 256 happens
 	cpu.register[vx] += cpu.register[vy]
 
 	vm.IncrementPC()
@@ -230,13 +226,13 @@ func (vm *VM) sub_reg(vx, vy uint8) {
 func (vm *VM) shr(vx, vy uint8) {
 	cpu := vm.cpu
 
-	if cpu.register[vx]&1 == 1 {
+	if cpu.register[vy]&1 == 1 {
 		cpu.register[0xF] = 1
 	} else {
 		cpu.register[0xF] = 0
 	}
 
-	cpu.register[vx] /= 2 // same as right shift 1
+	cpu.register[vx] = cpu.register[vy] / 2 // same as right shift 1
 
 	vm.IncrementPC()
 }
@@ -266,14 +262,14 @@ func (vm *VM) subn(x, y uint8) {
 func (vm *VM) shl(vx, vy uint8) {
 	cpu := vm.cpu
 
-	// todo: @check check for most significant bit instead
-	if cpu.register[vx]&1 == 1 {
+	// todo: @test
+	if cpu.register[vy]>>7 == 1 {
 		cpu.register[0xF] = 1
 	} else {
 		cpu.register[0xF] = 0
 	}
 
-	cpu.register[vx] *= 2
+	cpu.register[vx] = cpu.register[vy] * 2
 
 	vm.IncrementPC()
 }
@@ -318,7 +314,7 @@ func (vm *VM) rnd(vx uint8, kk byte) {
 
 	// @improve: can we improve the rand here
 	// also, need to @test this
-	cpu.register[vx] = byte(RandInRange(0, 256)) & kk
+	cpu.register[vx] = byte(RandInRange(0, 256)%0xFF) & kk
 
 	vm.IncrementPC()
 }
@@ -347,7 +343,7 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 		buf[i] = memory.ram[startAddr+i]
 	}
 
-	// todo: wrapping logic
+	// todo: verify wrapping logic
 
 	scr := vm.screen
 
@@ -363,11 +359,14 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 
 			res := int((buf[j] >> i) & 1)
 
-			if scr.display[y+j][x+(8-i-1)] == 1 && res == 0 {
+			yLine := (y + j) % EmuHeight
+			xLine := (x + (8 - i - 1)) % EmuWidth
+
+			if scr.display[yLine][xLine] == 1 && res == 0 {
 				cpu.register[0xF] = 1
 			}
 
-			scr.display[y+j][x+(8-i-1)] = res
+			scr.display[yLine][xLine] ^= res
 		}
 	}
 
@@ -384,14 +383,8 @@ func (vm *VM) skp(vx uint8) {
 
 	vxData := cpu.register[vx]
 
-	keyEvent := <-vm.keyboardEvents
-	val, err := Chip8Key(keyEvent.Code)
-
-	// todo: keep checking until we find a supported key
-	if err != nil {
-		log.Printf("unsupported key: %s", keyEvent.Code)
-		return
-	}
+	var val byte
+	var err error
 
 	for {
 		keyEvent := <-vm.keyboardEvents
@@ -417,14 +410,8 @@ func (vm *VM) sknp(vx uint8) {
 
 	vxData := cpu.register[vx]
 
-	keyEvent := <-vm.keyboardEvents
-	val, err := Chip8Key(keyEvent.Code)
-
-	// todo: keep checking until we find a supported key
-	if err != nil {
-		log.Printf("Unsupported key: %s", keyEvent.Code)
-		return
-	}
+	var val byte
+	var err error
 
 	for {
 		keyEvent := <-vm.keyboardEvents
@@ -458,8 +445,16 @@ func (vm *VM) ld_dt_in_vx(vx uint8) {
 func (vm *VM) ld_key(vx uint8) {
 	cpu := vm.cpu
 	key := <-vm.keyboardEvents
-	// todo: do not ignore error?
-	cpu.register[vx], _ = Chip8Key(key.Code)
+
+	var err error
+
+	for {
+		cpu.register[vx], err = Chip8Key(key.Code)
+
+		if err == nil {
+			break
+		}
+	}
 
 	vm.IncrementPC()
 }
@@ -488,8 +483,6 @@ func (vm *VM) ld_st(vx uint8) {
 // Set I = I + Vx.
 // The values of I and Vx are added, and the results are stored in I.
 func (vm *VM) add_i(vx uint8) {
-	// todo: handle overflow here
-
 	cpu := vm.cpu
 
 	cpu.registerI = uint16(cpu.register[vx]) + cpu.registerI
@@ -517,25 +510,17 @@ func (vm *VM) ld_font(x uint8) {
 // @supershaddy impl, not sure if this works or not
 func (vm *VM) bcd_ld(x uint8) {
 	cpu := vm.cpu
-	// decimal := cpu.register[x]
-	// TODO
 	vxData := cpu.register[x]
 
-	revNum := Reverse(strconv.Itoa(int(vxData)))
-	for idx, i := range revNum {
-		res, _ := strconv.ParseUint(strconv.QuoteRune(i), 10, 8)
-		cpu.register[idx] = byte(res)
-	}
+	memory := vm.memory
+
+	I := cpu.registerI
+
+	memory.ram[I] = vxData / 100
+	memory.ram[I+1] = (vxData / 10) % 10
+	memory.ram[I+2] = vxData % 10
 
 	vm.IncrementPC()
-
-	// memory := vm.memory
-	//
-	// memory.ram[I] = (byte)(cpu_V[(opcode&0x0F00)>>8] / 100)
-	// memory[I+1] = (byte)((cpu_V[(opcode&0x0F00)>>8] / 10) % 10)
-	// memory[I+2] = (byte)((cpu_V[(opcode&0x0F00)>>8] % 100) % 10)
-	// pc += 2
-	// break
 }
 
 // Fx55 - LD [I], Vx

@@ -17,11 +17,17 @@ import (
 // A sprite is a group of bytes which are a binary representation of the desired picture.
 // Chip-8 sprites can be up to 15 bytes, for a possible sprite size of 8x15
 const (
-	WinHeight = 32 * 12
-	WinWidth  = 64 * 12
 	EmuHeight = 32
 	EmuWidth  = 64
-	Scale     = 10
+
+	// Scale of the main window relative to Emu dimensions
+	WinScale = 20
+
+	WinHeight = EmuHeight * WinScale
+	WinWidth  = EmuWidth * WinScale
+
+	// Acutal Emu buffer scale
+	EmuScale = 18
 )
 
 // Colors
@@ -121,7 +127,7 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 				scaledDim := image.Rectangle{
 					image.Point{0, 0},
-					image.Point{EmuWidth * Scale, EmuHeight * Scale}}
+					image.Point{EmuWidth * EmuScale, EmuHeight * EmuScale}}
 
 				window.Scale(scaledDim, tex, drawBuff.Bounds(), draw.Over, &screen.DrawOptions{})
 				window.Publish()
@@ -159,7 +165,6 @@ func BufferToScreen(scr *Screen) {
 	scr.window.Send(paint.Event{})
 }
 
-// Bounds: (0,0)-(64,32)
 func defaultDrawToBuffer(img *image.RGBA) {
 	b := img.Bounds()
 
@@ -167,14 +172,14 @@ func defaultDrawToBuffer(img *image.RGBA) {
 
 	for x := b.Min.X; x < b.Max.X; x++ {
 		for y := b.Min.Y; y < b.Max.Y; y++ {
-			ran := RandInRange(0, 2)
+			img.SetRGBA(x, y, Black)
 
-			// img.SetRGBA(x, y, Blue)
-			if ran == 0 {
-				img.SetRGBA(x, y, White)
-			} else {
-				img.SetRGBA(x, y, Black)
-			}
+			//ran := RandInRange(0, 2)
+			//if ran == 0 {
+			//	img.SetRGBA(x, y, White)
+			//} else {
+			//	img.SetRGBA(x, y, Black)
+			//}
 		}
 	}
 }

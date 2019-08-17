@@ -7,6 +7,7 @@ import (
 )
 
 // Refer to: http://mattmik.com/files/chip8/mastering/chip8.html
+// Excellent guide to understanding everything about chip8 emulation
 
 func main() {
 
@@ -14,11 +15,8 @@ func main() {
 
 	log.Println("Booting up CHIP-8...")
 
-	// parse the rom file
-	args := os.Args
-
 	// pick the last
-	romFilePath := args[len(args)-1]
+	romFilePath := os.Args[len(os.Args)-1]
 	log.Printf("Provided rom filepath: %s", romFilePath)
 
 	conf := VMConfig{
@@ -27,7 +25,7 @@ func main() {
 	// create VM
 	vm := InitVM(&conf)
 
-	// @hack: @fix sleep for 2 seconds to ensure the window is up and running
+	// @hack: @fix sleep for 2 seconds to ensure the window (in screen struct) is up and running
 	time.Sleep(2 * 1000 * time.Duration(1e6))
 
 	// todo: don't crash at this line if no rom is loaded
@@ -36,9 +34,10 @@ func main() {
 	// TODO: the screen should be running in the main go thread.
 	// https://stackoverflow.com/a/57474359/1180321
 
+	t := 5 * 1 * time.Duration(1e6)
 	for {
 		vm.Tick()
-		var t = 5 * 100 * time.Duration(1e6)
+
 		time.Sleep(t)
 	}
 

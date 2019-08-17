@@ -1,3 +1,9 @@
+# custom
+todo.txt
+*.iml
+*.idea
+.vscode
+
 # Binaries for programs and plugins
 *.exe
 *.exe~

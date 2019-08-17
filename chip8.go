@@ -2,24 +2,21 @@ package main
 
 import (
 	"encoding/binary"
-	"errors"
 	"log"
 
 	"golang.org/x/mobile/event/key"
 )
 
-// ErrOpcodeNotImplemented ...
-var ErrOpcodeNotImplemented = errors.New("Opcode not implemented yet!")
-
-// VM ...
+// VM contains the whole state of emulator
 type VM struct {
 	cpu    *CPU
 	screen *Screen
 	memory *Memory
-	// keyboardEvents propagation is needed since we read them from display screen
-	// and require to access them in some of the instruction opcodes
-	// this channel serves as a buffer for this
-	// @verify todo: no deadlock condition should be there in case of empty buffer
+
+	// keyboardEvents propagation is needed
+	// since we read them from display screen
+	// and are required to access them in some of the opcodes
+	// This channel serves as a buffer and bridges
 	keyboardEvents chan key.Event
 }
 
@@ -39,17 +36,10 @@ func InitVM(vmConfig *VMConfig) *VM {
 	// todo: error handling
 	vm.memory.LoadRomFile(vmConfig.romFilePath)
 
-	// setup display
-	vm.keyboardEvents = make(chan key.Event, 100)
-	vm.screen = NewDisplay(vm.keyboardEvents)
+	keyPressBuffer := 100
+	vm.keyboardEvents = make(chan key.Event, keyPressBuffer)
 
-	// so as to improve the abstraction
-	// we can pass the actualKeyboard events
-	// to keypad method, which will transform
-	// to the hex keyboard of chip-8 and pass
-	// to another transformed/actual hex keyboard channel
-	// @discuss
-	// keypad channel
+	vm.screen = NewDisplay(vm.keyboardEvents)
 
 	return vm
 }
@@ -61,10 +51,7 @@ func (vm *VM) ReadOpcode() (uint16, error) {
 	memory := vm.memory
 	cpu := vm.cpu
 
-	// pick out program counter
 	pc := cpu.programCounter
-
-	log.Printf("Curr PC val: %d", pc)
 
 	// no need to off-set since we directly map
 	// the rom data at 0x200 in the memory.ram buffer
@@ -82,14 +69,14 @@ func (vm *VM) ReadOpcode() (uint16, error) {
 	hexRep := HexOf(opcode)
 	log.Printf("**** Identified opcode :: %s ****\n", hexRep)
 
-	// PC will be incremented inside opcodes,
+	// PC is be incremented inside opcodes,
 	// for better locality of the instruction exec logic
-	// cpu.programCounter += 2
+	// and some opcode modify PC in non-standard ways
 
 	return opcode, nil
 }
 
-// Tick ...
+// Tick method executes one opcode at a time
 func (vm *VM) Tick() {
 
 	opcode, err := vm.ReadOpcode()
@@ -97,9 +84,7 @@ func (vm *VM) Tick() {
 	if err != nil {
 		// figure out a way to more gracefully
 		// end the program when ROM execution is
-		// completed
-		// or we can have a special opcode for that
-		// but that would be messing with the spec
+		// completed or the display window is closed
 		log.Fatal(err)
 	}
 
@@ -117,13 +102,8 @@ func (vm *VM) Tick() {
 // to leverage function pointer array
 func (vm *VM) executeOpcode(opcode uint16) {
 
-	if opcode == 0 {
-		// no operation
-		log.Printf("NO OP code called! %s", HexOf(opcode))
-	}
-
-	// Atanomy of a CHIP-8 opcode
-	// 2 bytes opcode
+	// Anatomy of a CHIP-8 opcode
+	// Length of every opcode: 2 bytes
 	//   1st nibble 2nd nibble      3rd nibble 4th nibble
 	// |_______________________|  |_______________________|
 	//        upperByte                  lowerByte
@@ -138,36 +118,37 @@ func (vm *VM) executeOpcode(opcode uint16) {
 	// kk or byte - An 8-bit value, the lowest 8 bits of the instruction
 
 	// NOTE: same docs (above) have been provided
-	// in opcodes.go for easy understanding
+	// in opcodes.go for easy reference
 
 	upperByte := byte(opcode >> 8) // & 0xFF00
 	lowerByte := byte(opcode & 0xFF)
 
-	// In most signifiant -> to least significant order
+	// In most significant -> to least significant order
 	firstNibble := upperByte >> 4
 	secondNibble := upperByte & 0xF
 	thirdNibble := lowerByte >> 4
 	fourthNibble := lowerByte & 0xF
 
 	mmm := opcode & 0xFFF
-	// xy := opcode & 0xFF0
 
 	x := secondNibble
 	y := thirdNibble
 	kk := lowerByte
 
 	log.Printf("UB: %s LB: %s", HexOfByte(upperByte), HexOfByte(lowerByte))
-
 	log.Printf("FstN: %s SN: %s TN: %s FthN: %s", HexOfByte(firstNibble), HexOfByte(secondNibble), HexOfByte(thirdNibble), HexOfByte(fourthNibble))
 
-	// NOP
 	if opcode == 0 {
-
+		// NOP
+		log.Printf("NO OP code called! %s", HexOf(opcode))
 	} else if upperByte == 0 {
 		if lowerByte == 0xE0 {
 			vm.cls()
 		} else if lowerByte == 0xEE {
 			vm.ret()
+		} else {
+			log.Print("Execute machine language subroutine at address NNN")
+			log.Fatal("Opcode not implemented...")
 		}
 	} else if firstNibble == 1 {
 		// 1nnn
@@ -209,8 +190,13 @@ func (vm *VM) executeOpcode(opcode uint16) {
 		} else if fourthNibble == 5 {
 			// 8xy5
 			vm.add_reg(x, y)
+		} else if fourthNibble == 6 {
+			vm.shr(x, y)
+		} else if fourthNibble == 7 {
+			vm.subn(x, y)
+		} else if fourthNibble == 0xE {
+			vm.shl(x, y)
 		}
-		// is there as 6 as well?
 
 	} else if firstNibble == 9 {
 		// 9xy0
@@ -241,6 +227,9 @@ func (vm *VM) executeOpcode(opcode uint16) {
 		if lowerByte == 0x07 {
 			// Fx07
 			vm.ld_dt_in_vx(x)
+		} else if lowerByte == 0x0A {
+			// Fx0A
+			vm.ld_key(x)
 		} else if lowerByte == 0x15 {
 			// Fx15
 			vm.ld_dt(x)
