@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"log"
+	"time"
 
 	"golang.org/x/mobile/event/key"
 )
@@ -38,6 +39,21 @@ func InitVM(vmConfig *VMConfig) *VM {
 
 	keyPressBuffer := 100
 	vm.keyboardEvents = make(chan key.Event, keyPressBuffer)
+
+	InitKeyboard()
+
+	// Setup counting timers
+	// timers should be tweaked at 60 Hz, roughly every 16 millisecond
+	ticker := time.NewTicker(time.Duration(16666) * time.Microsecond)
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				vm.cpu.StepTimers()
+			}
+		}
+	}()
 
 	vm.screen = NewDisplay(vm.keyboardEvents)
 
@@ -94,7 +110,7 @@ func (vm *VM) Tick() {
 	log.Print(cpu.register)
 	vm.executeOpcode(opcode)
 
-	log.Printf("Executed: %s", HexOf(opcode))
+	//log.Printf("Executed: %s", HexOf(opcode))
 }
 
 // This will be our massive switch statement for now
@@ -135,8 +151,8 @@ func (vm *VM) executeOpcode(opcode uint16) {
 	y := thirdNibble
 	kk := lowerByte
 
-	log.Printf("UB: %s LB: %s", HexOfByte(upperByte), HexOfByte(lowerByte))
-	log.Printf("FstN: %s SN: %s TN: %s FthN: %s", HexOfByte(firstNibble), HexOfByte(secondNibble), HexOfByte(thirdNibble), HexOfByte(fourthNibble))
+	//log.Printf("UB: %s LB: %s", HexOfByte(upperByte), HexOfByte(lowerByte))
+	//log.Printf("FstN: %s SN: %s TN: %s FthN: %s", HexOfByte(firstNibble), HexOfByte(secondNibble), HexOfByte(thirdNibble), HexOfByte(fourthNibble))
 
 	if opcode == 0 {
 		// NOP

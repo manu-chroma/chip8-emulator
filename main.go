@@ -34,11 +34,22 @@ func main() {
 	// TODO: the screen should be running in the main go thread.
 	// https://stackoverflow.com/a/57474359/1180321
 
-	t := 5 * 1 * time.Duration(1e6)
-	for {
-		vm.Tick()
+	emulatorTick := time.NewTicker(time.Duration(2) * time.Millisecond)
 
-		time.Sleep(t)
-	}
+	func() {
+		for {
+			select {
+			case <-emulatorTick.C:
+				startT := time.Now()
+				vm.Tick()
+				endT := time.Now()
+
+				// todo: something wrong with this atm
+				log.Printf("Start time: %d, end time: %d", startT, endT)
+				log.Printf("Time of execution: %d", time.Since(startT).Round(time.Nanosecond))
+			}
+		}
+
+	}()
 
 }

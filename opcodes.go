@@ -343,8 +343,6 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 		buf[i] = memory.ram[startAddr+i]
 	}
 
-	// todo: verify wrapping logic
-
 	scr := vm.screen
 
 	// reset collision register
@@ -359,6 +357,7 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 
 			res := int((buf[j] >> i) & 1)
 
+			// wrap around if required
 			yLine := (y + j) % EmuHeight
 			xLine := (x + (8 - i - 1)) % EmuWidth
 
@@ -386,17 +385,20 @@ func (vm *VM) skp(vx uint8) {
 	var val byte
 	var err error
 
-	for {
+	found := false
+
+	for ; len(vm.keyboardEvents) > 0; {
 		keyEvent := <-vm.keyboardEvents
 		val, err = Chip8Key(keyEvent.Code)
 
 		if err == nil {
+			found = true
 			break
 		}
 	}
 
-	if vxData == val {
-		cpu.programCounter += 2
+	if found == true && vxData == val {
+		cpu.programCounter += 4
 	} else {
 		vm.IncrementPC()
 	}
@@ -413,17 +415,20 @@ func (vm *VM) sknp(vx uint8) {
 	var val byte
 	var err error
 
-	for {
+	found := false
+
+	for ; len(vm.keyboardEvents) > 0; {
 		keyEvent := <-vm.keyboardEvents
 		val, err = Chip8Key(keyEvent.Code)
 
 		if err == nil {
+			found = true
 			break
 		}
 	}
 
-	if vxData != val {
-		cpu.programCounter += 2
+	if found == true && vxData != val {
+		cpu.programCounter += 4
 	} else {
 		vm.IncrementPC()
 	}

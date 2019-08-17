@@ -28,7 +28,6 @@ type CPU struct {
 // StepTimers : Update timer values per second according to the frequency of their clocks
 func (cpu *CPU) StepTimers() {
 
-	// var TimerFrequencyHertz byte = 60
 	if cpu.delay != 0 {
 		cpu.delay = MaxOf(0, cpu.delay-1)
 
