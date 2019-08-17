@@ -39,8 +39,9 @@ var (
 
 // Screen incapsulates our display arr, window
 // and the backBuffer we're using to upload to display
+// y for height, x for row
 type Screen struct {
-	display    [EmuHeight][EmuWidth]int // y for height, x for row
+	display    [EmuHeight][EmuWidth]int
 	window     screen.Window
 	backBuffer screen.Buffer
 }
@@ -129,7 +130,7 @@ func NewDisplay(mouseEvents chan<- key.Event) *Screen {
 					image.Point{0, 0},
 					image.Point{EmuWidth * EmuScale, EmuHeight * EmuScale}}
 
-				window.Scale(scaledDim, tex, drawBuff.Bounds(), draw.Over, &screen.DrawOptions{})
+				window.Scale(scaledDim, tex, tex.Bounds(), draw.Src, nil)
 				window.Publish()
 
 			case error:
