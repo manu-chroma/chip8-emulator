@@ -24,19 +24,17 @@ func main() {
 
 	// create VM
 	vm := InitVM(&conf)
-
-	// @hack: sleep for 2 seconds to ensure the window (in screen struct) is up and running
-	time.Sleep(2 * time.Second)
-
-	// todo: don't crash at this line if no rom is loaded
-	log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
-
-	// TODO: the screen should be running in the main go thread.
-	// https://stackoverflow.com/a/57474359/1180321
-
 	emulatorTick := time.NewTicker(time.Duration(20) * time.Millisecond)
 
-	func() {
+	go func() {
+
+		// @hack: sleep for 2 seconds to ensure the window (in screen struct) is up and running
+		time.Sleep(2 * time.Second)
+
+		// todo: don't crash at this line if no rom is loaded
+		log.Println()
+		log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
+
 		for {
 			select {
 			case <-emulatorTick.C:
@@ -51,5 +49,10 @@ func main() {
 		}
 
 	}()
+
+	// TODO: the screen should be running in the main go thread.
+	// https://stackoverflow.com/a/57474359/1180321
+	// throws hard error when running the code on macOS
+	vm.InitDisplay()
 
 }
