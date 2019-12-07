@@ -25,8 +25,8 @@ func main() {
 	// create VM
 	vm := InitVM(&conf)
 
-	// @hack: @fix sleep for 2 seconds to ensure the window (in screen struct) is up and running
-	time.Sleep(2 * 1000 * time.Duration(1e6))
+	// @hack: sleep for 2 seconds to ensure the window (in screen struct) is up and running
+	time.Sleep(2 * time.Second)
 
 	// todo: don't crash at this line if no rom is loaded
 	log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
@@ -34,7 +34,7 @@ func main() {
 	// TODO: the screen should be running in the main go thread.
 	// https://stackoverflow.com/a/57474359/1180321
 
-	emulatorTick := time.NewTicker(time.Duration(2) * time.Millisecond)
+	emulatorTick := time.NewTicker(time.Duration(20) * time.Millisecond)
 
 	func() {
 		for {
@@ -44,8 +44,8 @@ func main() {
 				vm.Tick()
 				endT := time.Now()
 
-				// todo: something wrong with this atm
-				log.Printf("Start time: %d, end time: %d", startT, endT)
+				// todo: something seems wrong here ...
+				log.Printf("Start time: %s, end time: %s", startT.String(), endT.String())
 				log.Printf("Time of execution: %d", time.Since(startT).Round(time.Nanosecond))
 			}
 		}
