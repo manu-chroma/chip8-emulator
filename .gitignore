@@ -20,3 +20,6 @@ todo.txt
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+.DS_Store
+# go build binary
+chip8-emulator
