@@ -55,9 +55,12 @@ func InitVM(vmConfig *VMConfig) *VM {
 		}
 	}()
 
-	vm.screen = NewDisplay(vm.keyboardEvents)
-
 	return vm
+}
+
+// InitDisplay ..
+func (vm *VM) InitDisplay() {
+	vm.NewDisplay(vm.keyboardEvents)
 }
 
 // ReadOpcode checks the memory and the current state of cpu
@@ -205,12 +208,15 @@ func (vm *VM) executeOpcode(opcode uint16) {
 			vm.add_reg(x, y)
 		} else if fourthNibble == 5 {
 			// 8xy5
-			vm.add_reg(x, y)
+			vm.sub_reg(x, y)
 		} else if fourthNibble == 6 {
+			// 8xy6
 			vm.shr(x, y)
 		} else if fourthNibble == 7 {
+			// 8xy7
 			vm.subn(x, y)
 		} else if fourthNibble == 0xE {
+			// 8xyE
 			vm.shl(x, y)
 		}
 

@@ -58,12 +58,13 @@ func (scr *Screen) clearDisplay() {
 // NewDisplay returns Screen struct instance
 // We pass a sender channel to the display to pass us the mouseEvents
 // which obtain from the screen
-func NewDisplay(mouseEvents chan<- key.Event) *Screen {
+func (vm *VM) NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 	scr := &Screen{}
+	vm.screen = scr
 
 	// create a separate
-	go driver.Main(func(s screen.Screen) {
+	driver.Main(func(s screen.Screen) {
 		opts := screen.NewWindowOptions{
 			Height: WinHeight,
 			Width:  WinWidth,

@@ -24,19 +24,17 @@ func main() {
 
 	// create VM
 	vm := InitVM(&conf)
+	emulatorTick := time.NewTicker(time.Duration(20) * time.Millisecond)
 
-	// @hack: @fix sleep for 2 seconds to ensure the window (in screen struct) is up and running
-	time.Sleep(2 * 1000 * time.Duration(1e6))
+	go func() {
 
-	// todo: don't crash at this line if no rom is loaded
-	log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
+		// @hack: sleep for 2 seconds to ensure the window (in screen struct) is up and running
+		time.Sleep(2 * time.Second)
 
-	// TODO: the screen should be running in the main go thread.
-	// https://stackoverflow.com/a/57474359/1180321
+		// todo: don't crash at this line if no rom is loaded
+		log.Println()
+		log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
 
-	emulatorTick := time.NewTicker(time.Duration(2) * time.Millisecond)
-
-	func() {
 		for {
 			select {
 			case <-emulatorTick.C:
@@ -44,12 +42,17 @@ func main() {
 				vm.Tick()
 				endT := time.Now()
 
-				// todo: something wrong with this atm
-				log.Printf("Start time: %d, end time: %d", startT, endT)
+				// todo: something seems wrong here ...
+				log.Printf("Start time: %s, end time: %s", startT.String(), endT.String())
 				log.Printf("Time of execution: %d", time.Since(startT).Round(time.Nanosecond))
 			}
 		}
 
 	}()
+
+	// TODO: the screen should be running in the main go thread.
+	// https://stackoverflow.com/a/57474359/1180321
+	// throws hard error when running the code on macOS
+	vm.InitDisplay()
 
 }

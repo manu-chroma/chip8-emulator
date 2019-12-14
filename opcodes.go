@@ -78,7 +78,7 @@ func (vm *VM) se(x uint8, kk byte) {
 
 	if cpu.register[x] == kk {
 		// skipping ins
-		cpu.programCounter += 4
+		cpu.programCounter += uint16(4)
 	} else {
 		vm.IncrementPC()
 	}
@@ -94,7 +94,7 @@ func (vm *VM) se_not(x uint8, kk byte) {
 	log.Printf("SKIP NXT INS if Vx != kk, Vx: %d and kk: %d", cpu.register[x], kk)
 
 	if cpu.register[x] != kk {
-		cpu.programCounter += 4
+		cpu.programCounter += uint16(4)
 	} else {
 		vm.IncrementPC()
 	}
@@ -109,8 +109,8 @@ func (vm *VM) se_reg(x, y uint8) {
 
 	if cpu.register[x] == cpu.register[y] {
 		// skipping two because the instruction is of 2
-		// bytes size
-		cpu.programCounter += 4
+		// bytes size i.e. incrementing program counter by 2
+		cpu.programCounter += uint16(4)
 	} else {
 		vm.IncrementPC()
 	}
@@ -130,7 +130,7 @@ func (vm *VM) ld(vx uint8, data byte) {
 // Set Vx = Vx + kk.
 func (vm *VM) add(vx uint8, data byte) {
 	cpu := vm.cpu
-	log.Printf("ADD-ING byte: %d to Vx: %d", data, cpu.register[vx])
+	// log.Printf("ADD-ING byte: %d to Vx: %d", data, cpu.register[vx])
 	cpu.register[vx] += data
 
 	vm.IncrementPC()
@@ -208,7 +208,7 @@ func (vm *VM) add_reg(vx, vy uint8) {
 func (vm *VM) sub_reg(vx, vy uint8) {
 	cpu := vm.cpu
 
-	if cpu.register[vx] > cpu.register[vy] {
+	if cpu.register[vx] >= cpu.register[vy] {
 		cpu.register[0xF] = 1
 	} else {
 		cpu.register[0xF] = 0
@@ -226,13 +226,8 @@ func (vm *VM) sub_reg(vx, vy uint8) {
 func (vm *VM) shr(vx, vy uint8) {
 	cpu := vm.cpu
 
-	if cpu.register[vy]&1 == 1 {
-		cpu.register[0xF] = 1
-	} else {
-		cpu.register[0xF] = 0
-	}
-
-	cpu.register[vx] = cpu.register[vy] / 2 // same as right shift 1
+	cpu.register[0xF] = cpu.register[vx] & 1
+	cpu.register[vx] = cpu.register[vx] >> 1
 
 	vm.IncrementPC()
 }
@@ -258,18 +253,15 @@ func (vm *VM) subn(x, y uint8) {
 // 8xyE - SHL Vx {, Vy}
 // Set Vx = Vx SHL 1.
 // If the most-significant bit of Vx is 1, then VF is set to 1, otherwise to 0.
-// Then Vx is multiplied by 2.
+// Store the value of register VY shifted left one bit in register VX
 func (vm *VM) shl(vx, vy uint8) {
 	cpu := vm.cpu
 
-	// todo: @test
-	if cpu.register[vy]>>7 == 1 {
-		cpu.register[0xF] = 1
-	} else {
-		cpu.register[0xF] = 0
-	}
-
-	cpu.register[vx] = cpu.register[vy] * 2
+	// set VF to MSB of VX
+	cpu.register[0xF] = cpu.register[vx] >> 7
+	// x = y << 1 OR x = x << 1: both works
+	//check 8xyE notes at https://massung.github.io/CHIP-8/
+	cpu.register[vx] = cpu.register[vy] << 1
 
 	vm.IncrementPC()
 }
@@ -387,7 +379,7 @@ func (vm *VM) skp(vx uint8) {
 
 	found := false
 
-	for ; len(vm.keyboardEvents) > 0; {
+	for len(vm.keyboardEvents) > 0 {
 		keyEvent := <-vm.keyboardEvents
 		val, err = Chip8Key(keyEvent.Code)
 
@@ -417,7 +409,7 @@ func (vm *VM) sknp(vx uint8) {
 
 	found := false
 
-	for ; len(vm.keyboardEvents) > 0; {
+	for len(vm.keyboardEvents) > 0 {
 		keyEvent := <-vm.keyboardEvents
 		val, err = Chip8Key(keyEvent.Code)
 
@@ -536,8 +528,7 @@ func (vm *VM) ld_i_to_vx(vx uint8) {
 
 	for reg := uint8(0); reg <= vx; reg++ {
 		// reading each byte into the register
-		memory.ram[cpu.registerI] = cpu.register[reg]
-		cpu.registerI++
+		memory.ram[cpu.registerI+uint16(reg)] = cpu.register[reg]
 	}
 
 	vm.IncrementPC()
@@ -555,7 +546,7 @@ func (vm *VM) ld_vx(vx uint8) {
 		cpu.register[i] = memory.ram[addr+i]
 	}
 
-	cpu.registerI += uint16(vx) + 1
+	// cpu.registerI += uint16(vx) + 1
 
 	vm.IncrementPC()
 }
