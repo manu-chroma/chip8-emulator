@@ -3,14 +3,16 @@ package main
 import (
 	"image"
 	"image/color"
-	"image/draw"
 	"log"
 
 	"golang.org/x/mobile/event/paint"
 
 	"golang.org/x/exp/shiny/driver"
 	"golang.org/x/exp/shiny/screen"
+	"golang.org/x/image/draw"
+
 	"golang.org/x/mobile/event/key"
+
 	"golang.org/x/mobile/event/lifecycle"
 )
 
@@ -27,7 +29,7 @@ const (
 	WinWidth  = EmuWidth * WinScale
 
 	// Acutal Emu buffer scale
-	EmuScale = 18
+	EmuScale = 20
 )
 
 // Colors
@@ -79,7 +81,7 @@ func (vm *VM) NewDisplay(mouseEvents chan<- key.Event) *Screen {
 
 		defer window.Release()
 
-		dim := image.Point{EmuWidth, EmuHeight}
+		dim := image.Point{X: EmuWidth, Y: EmuHeight}
 		drawBuff, err := s.NewBuffer(dim)
 		if err != nil {
 			log.Fatal(err)
@@ -119,18 +121,21 @@ func (vm *VM) NewDisplay(mouseEvents chan<- key.Event) *Screen {
 				mouseEvents <- e
 
 			case paint.Event:
-				log.Print("Paint event, re-painting the buffer..")
-
-				tex, _ := s.NewTexture(dim)
-				defer tex.Release()
-
-				tex.Upload(image.Point{}, drawBuff, drawBuff.Bounds())
+				log.Println("Paint event, re-painting the buffer..")
 
 				scaledDim := image.Rectangle{
-					image.Point{0, 0},
-					image.Point{EmuWidth * EmuScale, EmuHeight * EmuScale}}
+					Max: image.Point{X: EmuWidth * EmuScale, Y: EmuHeight * EmuScale}}
 
-				window.Scale(scaledDim, tex, drawBuff.Bounds(), draw.Over, &screen.DrawOptions{})
+				drawBuff, err = s.NewBuffer(scaledDim.Max)
+
+				// scale image
+				src := scr.backBuffer.RGBA()
+				dst := image.NewRGBA(scaledDim)
+				draw.BiLinear.Scale(dst, dst.Bounds(), src, src.Bounds(), draw.Src, nil)
+
+				copyImageToBuffer(&drawBuff, dst)
+
+				window.Upload(image.Point{}, drawBuff, drawBuff.Bounds())
 				window.Publish()
 
 			case error:
@@ -141,6 +146,24 @@ func (vm *VM) NewDisplay(mouseEvents chan<- key.Event) *Screen {
 	})
 
 	return scr
+}
+
+func copyImageToBuffer(b *screen.Buffer, i *image.RGBA) {
+
+	buffImg := (*b).RGBA()
+	dim := buffImg.Bounds().Max
+
+	for y := 0; y < dim.Y; y++ {
+		for x := 0; x < dim.X; x++ {
+			col := i.At(x, y)
+			if col == Black {
+				buffImg.SetRGBA(x, y, Black)
+			} else {
+				buffImg.SetRGBA(x, y, White)
+			}
+		}
+	}
+
 }
 
 // BufferToScreen puts the buffer to the window
@@ -174,13 +197,6 @@ func defaultDrawToBuffer(img *image.RGBA) {
 	for x := b.Min.X; x < b.Max.X; x++ {
 		for y := b.Min.Y; y < b.Max.Y; y++ {
 			img.SetRGBA(x, y, Black)
-
-			//ran := RandInRange(0, 2)
-			//if ran == 0 {
-			//	img.SetRGBA(x, y, White)
-			//} else {
-			//	img.SetRGBA(x, y, Black)
-			//}
 		}
 	}
 }
