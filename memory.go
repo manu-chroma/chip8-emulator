@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
+	log "github.com/sirupsen/logrus"
 	"io"
-	"log"
 	"os"
 )
 
@@ -59,10 +59,9 @@ func (m *Memory) LoadRomFile(romFilePath string) {
 
 	// verify valid, readable file
 
-	f, err := os.Open(romFilePath) // Error handling elided for brevity.
+	f, err := os.Open(romFilePath)
 	if err != nil {
-		log.Printf("Not able to load the rom file: %v", err)
-		// log.Fatal("not able to open rom file..", err)
+		log.Fatalf("Not able to load the rom file: %v", err)
 		return
 	}
 
@@ -72,7 +71,7 @@ func (m *Memory) LoadRomFile(romFilePath string) {
 	_, err = io.Copy(buf, f)
 
 	if err != nil {
-		log.Printf("Not able to read rom data into buffer")
+		log.Infof("Not able to read rom data into buffer")
 	}
 
 	// todo: where to copy the rom data?
@@ -83,9 +82,9 @@ func (m *Memory) LoadRomFile(romFilePath string) {
 
 	m.romSize = buf.Len() // expressed as num of bytes
 
-	log.Printf("Rom buffer size is: %d", m.romSize)
+	log.Infof("Rom buffer size is: %d", m.romSize)
 
-	log.Println("Sucessfully copied rom file into ram buffer")
+	log.Infoln("Sucessfully copied rom file into ram buffer")
 }
 
 // copy fontset into RAM
@@ -95,5 +94,5 @@ func setDigitDataInRAM(m *Memory) {
 		m.ram[i] = chip8Fontset[i]
 	}
 
-	log.Print("Completed copying of chip8Fontset in the RAM memory")
+	log.Info("Completed copying of chip8Fontset in the RAM memory")
 }

@@ -1,6 +1,6 @@
 package main
 
-import "log"
+import log "github.com/sirupsen/logrus"
 
 // CPU ..
 type CPU struct {
@@ -41,7 +41,7 @@ func (cpu *CPU) StepTimers() {
 
 func newCPU() *CPU {
 
-	log.Print("Initing CPU..")
+	log.Info("Initing CPU..")
 
 	cpu := &CPU{
 		programCounter: ProgramAreaStart}

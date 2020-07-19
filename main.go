@@ -1,30 +1,35 @@
 package main
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"time"
 )
 
 // Refer to: http://mattmik.com/files/chip8/mastering/chip8.html
 // Excellent guide to understanding everything about chip8 emulation
+const (
+	CPUTickerSpeed = time.Duration(5) * time.Millisecond
+)
 
 func main() {
 
-	log.SetFlags(log.LstdFlags | log.Lshortfile)
+	// log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.SetLevel(log.InfoLevel)
 
-	log.Println("Booting up CHIP-8...")
+
+	log.Info("Booting up CHIP-8...")
 
 	// pick the last
 	romFilePath := os.Args[len(os.Args)-1]
-	log.Printf("Provided rom filepath: %s", romFilePath)
+	log.Info("Provided rom filepath: %s", romFilePath)
 
 	conf := VMConfig{
 		romFilePath: romFilePath}
 
 	// create VM
 	vm := InitVM(&conf)
-	emulatorTick := time.NewTicker(time.Duration(20) * time.Millisecond)
+	emulatorTick := time.NewTicker(CPUTickerSpeed)
 
 	go func() {
 
@@ -32,19 +37,19 @@ func main() {
 		time.Sleep(2 * time.Second)
 
 		// todo: don't crash at this line if no rom is loaded
-		log.Println()
-		log.Println("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
+		log.Infoln()
+		log.Infoln("Rom file: ", vm.memory.ram[ProgramAreaStart:ProgramAreaStart+vm.memory.romSize])
 
 		for {
 			select {
 			case <-emulatorTick.C:
-				startT := time.Now()
+				// startT := time.Now()
 				vm.Tick()
-				endT := time.Now()
+				// endT := time.Now()
 
 				// todo: something seems wrong here ...
-				log.Printf("Start time: %s, end time: %s", startT.String(), endT.String())
-				log.Printf("Time of execution: %d", time.Since(startT).Round(time.Nanosecond))
+				// log.("Start time: %s, end time: %s", startT.String(), endT.String())
+				// log.Info("Time of execution: %s", fmtDuration(time.Since(startT)))
 			}
 		}
 

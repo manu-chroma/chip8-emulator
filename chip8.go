@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/binary"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"time"
 
 	"golang.org/x/mobile/event/key"
@@ -37,7 +37,8 @@ func InitVM(vmConfig *VMConfig) *VM {
 	// todo: error handling
 	vm.memory.LoadRomFile(vmConfig.romFilePath)
 
-	keyPressBuffer := 100
+	// todo: Do away with keyboardEvents
+	keyPressBuffer := 1
 	vm.keyboardEvents = make(chan key.Event, keyPressBuffer)
 
 	InitKeyboard()
@@ -85,8 +86,8 @@ func (vm *VM) ReadOpcode() (uint16, error) {
 
 	opcode := binary.BigEndian.Uint16(memory.ram[pc : pc+2])
 
-	hexRep := HexOf(opcode)
-	log.Printf("**** Identified opcode :: %s ****\n", hexRep)
+	//hexRep := HexOf(opcode)
+	//log.Infof("**** Identified opcode :: %s ****\n", hexRep)
 
 	// PC is be incremented inside opcodes,
 	// for better locality of the instruction exec logic
@@ -109,11 +110,11 @@ func (vm *VM) Tick() {
 
 	cpu := vm.cpu
 
-	log.Printf("Before executing Opcode: %s, PC: %d, SP: %d", HexOf(opcode), cpu.programCounter, cpu.stackPointer)
-	log.Print(cpu.register)
+	// log.Infof("Before executing Opcode: %s, PC: %d, SP: %d", HexOf(opcode), cpu.programCounter, cpu.stackPointer)
+	log.Debug(cpu.register)
 	vm.executeOpcode(opcode)
 
-	//log.Printf("Executed: %s", HexOf(opcode))
+	//log.Infof("Executed: %s", HexOf(opcode))
 }
 
 // This will be our massive switch statement for now
@@ -136,7 +137,7 @@ func (vm *VM) executeOpcode(opcode uint16) {
 	// y - A 4-bit value, the upper 4 bits of the low byte of the instruction
 	// kk or byte - An 8-bit value, the lowest 8 bits of the instruction
 
-	// NOTE: same docs (above) have been provided
+	// NOTE: Above docs have been provided
 	// in opcodes.go for easy reference
 
 	upperByte := byte(opcode >> 8) // & 0xFF00
@@ -154,19 +155,19 @@ func (vm *VM) executeOpcode(opcode uint16) {
 	y := thirdNibble
 	kk := lowerByte
 
-	//log.Printf("UB: %s LB: %s", HexOfByte(upperByte), HexOfByte(lowerByte))
-	//log.Printf("FstN: %s SN: %s TN: %s FthN: %s", HexOfByte(firstNibble), HexOfByte(secondNibble), HexOfByte(thirdNibble), HexOfByte(fourthNibble))
+	//log.Infof("UB: %s LB: %s", HexOfByte(upperByte), HexOfByte(lowerByte))
+	//log.Infof("FstN: %s SN: %s TN: %s FthN: %s", HexOfByte(firstNibble), HexOfByte(secondNibble), HexOfByte(thirdNibble), HexOfByte(fourthNibble))
 
 	if opcode == 0 {
 		// NOP
-		log.Printf("NO OP code called! %s", HexOf(opcode))
+		log.Infof("NO OP code called! %s", HexOf(opcode))
 	} else if upperByte == 0 {
 		if lowerByte == 0xE0 {
 			vm.cls()
 		} else if lowerByte == 0xEE {
 			vm.ret()
 		} else {
-			log.Print("Execute machine language subroutine at address NNN")
+			log.Info("Execute machine language subroutine at address NNN")
 			log.Fatal("Opcode not implemented...")
 		}
 	} else if firstNibble == 1 {
