@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/rand"
+	"time"
 )
 
 // MinOf arbitary no. of bytes
@@ -52,4 +53,17 @@ func Reverse(s string) (result string) {
 		result = string(v) + result
 	}
 	return
+}
+
+func fmtDuration(d time.Duration) string {
+	d = d.Round(time.Second)
+
+	h := d / time.Hour
+	d -= h * time.Hour
+
+	m := d / time.Minute
+	d -= m * time.Minute
+
+	s := d / time.Second
+	return fmt.Sprintf("%02d:%02d", m, s)
 }

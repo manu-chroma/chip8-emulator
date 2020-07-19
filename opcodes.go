@@ -1,7 +1,11 @@
 package main
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
+	"image/color"
+	"time"
+
+	"golang.org/x/mobile/event/key"
 )
 
 // Contains CHIP-8 instruction set of 36 instructions
@@ -25,7 +29,7 @@ import (
 // Clear display
 func (vm *VM) cls() {
 	scr := vm.screen
-	log.Print("Clearing display")
+	log.Debug("Clearing display")
 	scr.clearDisplay()
 	BufferToScreen(scr)
 
@@ -37,7 +41,7 @@ func (vm *VM) cls() {
 func (vm *VM) ret() {
 
 	cpu := vm.cpu
-	log.Printf("Returning from sub-routine: PC: %d and SP: %d", cpu.programCounter, cpu.stackPointer)
+	log.Debugf("Returning from sub-routine: PC: %d and SP: %d", cpu.programCounter, cpu.stackPointer)
 	cpu.stackPointer--
 	cpu.programCounter = cpu.stack[cpu.stackPointer]
 
@@ -49,7 +53,7 @@ func (vm *VM) ret() {
 func (vm *VM) jp(nnn uint16) {
 	// @discuss: should we validate the addr before setting it?
 	cpu := vm.cpu
-	log.Printf("JMP to addr %d and PC: %d and SP: %d", nnn, cpu.programCounter, cpu.stackPointer)
+	log.Debugf("JMP to addr %d and PC: %d and SP: %d", nnn, cpu.programCounter, cpu.stackPointer)
 	cpu.programCounter = nnn
 }
 
@@ -60,7 +64,7 @@ func (vm *VM) call(nnn uint16) {
 	// should we validate the addr before setting it
 	cpu := vm.cpu
 
-	log.Printf("CALL %d and PC: %d and SP: %d", nnn, cpu.programCounter, cpu.stackPointer)
+	log.Debugf("CALL %d and PC: %d and SP: %d", nnn, cpu.programCounter, cpu.stackPointer)
 
 	cpu.stack[cpu.stackPointer] = cpu.programCounter
 	cpu.stackPointer++
@@ -74,11 +78,11 @@ func (vm *VM) se(x uint8, kk byte) {
 
 	cpu := vm.cpu
 
-	log.Printf("SKIP NXT INS if Vx == kk, Vx: %d and kk: %d", cpu.register[x], kk)
+	log.Debugf("SKIP NXT INS if Vx == kk, Vx: %d and kk: %d", cpu.register[x], kk)
 
 	if cpu.register[x] == kk {
 		// skipping ins
-		cpu.programCounter += uint16(4)
+		vm.SkipInstruction()
 	} else {
 		vm.IncrementPC()
 	}
@@ -91,10 +95,10 @@ func (vm *VM) se_not(x uint8, kk byte) {
 
 	cpu := vm.cpu
 
-	log.Printf("SKIP NXT INS if Vx != kk, Vx: %d and kk: %d", cpu.register[x], kk)
+	log.Debugf("SKIP NXT INS if Vx != kk, Vx: %d and kk: %d", cpu.register[x], kk)
 
 	if cpu.register[x] != kk {
-		cpu.programCounter += uint16(4)
+		vm.SkipInstruction()
 	} else {
 		vm.IncrementPC()
 	}
@@ -105,12 +109,11 @@ func (vm *VM) se_not(x uint8, kk byte) {
 func (vm *VM) se_reg(x, y uint8) {
 	cpu := vm.cpu
 
-	log.Printf("SKIP NXT INS if Vx == Vy, Vx: %d and kk: %d", cpu.register[x], cpu.register[y])
+	log.Debugf("SKIP NXT INS if Vx == Vy, Vx: %d and kk: %d", cpu.register[x], cpu.register[y])
 
 	if cpu.register[x] == cpu.register[y] {
-		// skipping two because the instruction is of 2
-		// bytes size i.e. incrementing program counter by 2
-		cpu.programCounter += uint16(4)
+		
+		vm.SkipInstruction()
 	} else {
 		vm.IncrementPC()
 	}
@@ -120,7 +123,7 @@ func (vm *VM) se_reg(x, y uint8) {
 // Set Vx = kk.
 func (vm *VM) ld(vx uint8, data byte) {
 	cpu := vm.cpu
-	log.Printf("LD byte: %d to Vx: %d", data, vx)
+	log.Debugf("LD byte: %d to Vx: %d", data, vx)
 	cpu.register[vx] = data
 
 	vm.IncrementPC()
@@ -130,7 +133,7 @@ func (vm *VM) ld(vx uint8, data byte) {
 // Set Vx = Vx + kk.
 func (vm *VM) add(vx uint8, data byte) {
 	cpu := vm.cpu
-	// log.Printf("ADD-ING byte: %d to Vx: %d", data, cpu.register[vx])
+	// log.Debugf("ADD-ING byte: %d to Vx: %d", data, cpu.register[vx])
 	cpu.register[vx] += data
 
 	vm.IncrementPC()
@@ -140,7 +143,7 @@ func (vm *VM) add(vx uint8, data byte) {
 // Set Vx = Vy.
 func (vm *VM) ld_reg(vx, vy uint8) {
 	cpu := vm.cpu
-	log.Printf("LD data from Vy: %d to Vx: %d", vy, vx)
+	log.Debugf("LD data from Vy: %d to Vx: %d", vy, vx)
 	cpu.register[vx] = cpu.register[vy]
 
 	vm.IncrementPC()
@@ -272,7 +275,7 @@ func (vm *VM) sne(vx, vy uint8) {
 	cpu := vm.cpu
 
 	if cpu.register[vx] != cpu.register[vy] {
-		cpu.programCounter += 4
+		vm.SkipInstruction()
 	} else {
 		vm.IncrementPC()
 	}
@@ -282,7 +285,7 @@ func (vm *VM) sne(vx, vy uint8) {
 // Set I = nnn.
 func (vm *VM) ld_i(addr uint16) {
 	cpu := vm.cpu
-	log.Printf("LD: Loading addr %d into register I", addr)
+	log.Debugf("LD: Loading addr %d into register I", addr)
 	cpu.registerI = addr
 
 	vm.IncrementPC()
@@ -324,7 +327,7 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 	y := cpu.register[vy]
 	height := n
 
-	log.Printf("Drawing sprite at x: %d, y:%d", x, y)
+	log.Debugf("Drawing sprite at x: %d, y:%d", x, y)
 
 	// @refactor: Take a slice of underlying memory instead?
 	buf := make([]byte, n)
@@ -357,6 +360,16 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 				cpu.register[0xF] = 1
 			}
 
+			// display[yLine][xLine] ^= res
+			img := scr.backBuffer.RGBA()
+			r, g, b, a := img.At(int(xLine), int(yLine)).RGBA()
+			currColor := color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+			if currColor == Black && res == 1 {
+				img.SetRGBA(int(xLine), int(yLine), White)
+			} else if currColor == White && res == 1 {
+				img.SetRGBA(int(xLine), int(yLine), Black)
+			}
+
 			scr.display[yLine][xLine] ^= res
 		}
 	}
@@ -374,23 +387,11 @@ func (vm *VM) skp(vx uint8) {
 
 	vxData := cpu.register[vx]
 
-	var val byte
-	var err error
+	keyState := GetKeyState(vxData)
 
-	found := false
-
-	for len(vm.keyboardEvents) > 0 {
-		keyEvent := <-vm.keyboardEvents
-		val, err = Chip8Key(keyEvent.Code)
-
-		if err == nil {
-			found = true
-			break
-		}
-	}
-
-	if found == true && vxData == val {
-		cpu.programCounter += 4
+	if keyState == key.DirPress {
+		// skip instruction
+		vm.SkipInstruction()
 	} else {
 		vm.IncrementPC()
 	}
@@ -404,23 +405,10 @@ func (vm *VM) sknp(vx uint8) {
 
 	vxData := cpu.register[vx]
 
-	var val byte
-	var err error
+	keyState := GetKeyState(vxData)
 
-	found := false
-
-	for len(vm.keyboardEvents) > 0 {
-		keyEvent := <-vm.keyboardEvents
-		val, err = Chip8Key(keyEvent.Code)
-
-		if err == nil {
-			found = true
-			break
-		}
-	}
-
-	if found == true && vxData != val {
-		cpu.programCounter += 4
+	if keyState != key.DirPress {
+		vm.SkipInstruction()
 	} else {
 		vm.IncrementPC()
 	}
@@ -440,18 +428,30 @@ func (vm *VM) ld_dt_in_vx(vx uint8) {
 // Wait for a key press, store the value of the key in Vx.
 // All execution stops until a key is pressed, then the value of that key is stored in Vx.
 func (vm *VM) ld_key(vx uint8) {
-	cpu := vm.cpu
-	key := <-vm.keyboardEvents
+	currTime := time.Now()
 
-	var err error
+	var pressedKeyCode key.Code
 
+	log.Debugf("BEFORE: LastPressedKeyTime: %t and currTime: %t", lastPressedKey.time, currTime)
+
+	// Blocked until we get a correct input
 	for {
-		cpu.register[vx], err = Chip8Key(key.Code)
-
-		if err == nil {
+		if lastPressedKey.time.After(currTime) {
+			pressedKeyCode = lastPressedKey.code
 			break
 		}
+		// add 1 cycle sleep b/w polling
+		time.Sleep(CPUTickerSpeed)
+		// TODO: in future, can this be an event?
 	}
+
+	log.Debugf("AFTER: LastPressedKeyTime: %t and currTime: %t", lastPressedKey.time, currTime)
+
+	cpu := vm.cpu
+
+	val, _ := keyboardMap[pressedKeyCode]
+
+	cpu.register[vx] = val
 
 	vm.IncrementPC()
 }
@@ -555,6 +555,13 @@ func (vm *VM) ld_vx(vx uint8) {
 func (vm *VM) IncrementPC() {
 	cpu := vm.cpu
 	cpu.programCounter += uint16(2)
+}
+
+func (vm *VM) SkipInstruction() {
+	// skipping two because the instruction is of 2
+	// bytes size i.e. incrementing program counter by 2
+	cpu := vm.cpu
+	cpu.programCounter += uint16(4)
 }
 
 // Opcode ... @future management in this way will help
