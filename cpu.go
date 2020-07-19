@@ -30,13 +30,11 @@ func (cpu *CPU) StepTimers() {
 
 	if cpu.delay != 0 {
 		cpu.delay = MaxOf(0, cpu.delay-1)
-
 	}
 
 	if cpu.sound != 0 {
 		cpu.sound = MaxOf(0, cpu.sound-1)
 	}
-
 }
 
 func newCPU() *CPU {

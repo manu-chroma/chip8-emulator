@@ -57,13 +57,11 @@ func (scr *Screen) clearDisplay() {
 			scr.display[j][i] = 0
 		}
 	}
-
 }
 
 // NewDisplay returns Screen struct instance
-// We pass a sender channel to the display to pass us the keyboardEvents
 // which obtain from the screen
-func (vm *VM) NewDisplay(keyboardEvents chan<- key.Event) *Screen {
+func (vm *VM) NewDisplay() *Screen {
 
 	scr := &Screen{}
 	vm.screen = scr

@@ -58,7 +58,6 @@ func newMemory() *Memory {
 func (m *Memory) LoadRomFile(romFilePath string) {
 
 	// verify valid, readable file
-
 	f, err := os.Open(romFilePath)
 	if err != nil {
 		log.Fatalf("Not able to load the rom file: %v", err)
@@ -74,25 +73,24 @@ func (m *Memory) LoadRomFile(romFilePath string) {
 		log.Infof("Not able to read rom data into buffer")
 	}
 
-	// todo: where to copy the rom data?
-
-	// src -> destiantion
-	// todo: check if this can be improved
+	// Directly map the rom data at 0x200 in the memory.ram buffer
+	// and init the PC with 0x200 val
+	// This emulates the way the actual implementation works..
+	// The 0x0-0x1FF range is for actual CHIP-8 emulator logic.
 	copy(m.ram[ProgramAreaStart:], buf.Bytes()[:])
 
 	m.romSize = buf.Len() // expressed as num of bytes
 
 	log.Infof("Rom buffer size is: %d", m.romSize)
-
-	log.Infoln("Sucessfully copied rom file into ram buffer")
+	log.Infoln("Successfully copied rom file into ram buffer")
 }
 
-// copy fontset into RAM
+// copy font-set into RAM
 func setDigitDataInRAM(m *Memory) {
 
 	for i := 0; i < 80; i++ {
 		m.ram[i] = chip8Fontset[i]
 	}
 
-	log.Info("Completed copying of chip8Fontset in the RAM memory")
+	log.Info("Completed copying of chip8 Font-set in the RAM memory")
 }

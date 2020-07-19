@@ -4,8 +4,6 @@ import (
 	"encoding/binary"
 	log "github.com/sirupsen/logrus"
 	"time"
-
-	"golang.org/x/mobile/event/key"
 )
 
 // VM contains the whole state of emulator
@@ -14,11 +12,8 @@ type VM struct {
 	screen *Screen
 	memory *Memory
 
-	// keyboardEvents propagation is needed
-	// since we read them from display screen
-	// and are required to access them in some of the opcodes
-	// This channel serves as a buffer and bridges
-	keyboardEvents chan key.Event
+	// todo: keyboard should be access via the VM struct and not directly
+	// or from VM keyboard interface methods..
 }
 
 // VMConfig ...
@@ -30,21 +25,17 @@ type VMConfig struct {
 func InitVM(vmConfig *VMConfig) *VM {
 
 	vm := new(VM)
-
 	vm.cpu = newCPU()
 	vm.memory = newMemory()
 
-	// todo: error handling
 	vm.memory.LoadRomFile(vmConfig.romFilePath)
-
-	// todo: Do away with keyboardEvents
-	keyPressBuffer := 1
-	vm.keyboardEvents = make(chan key.Event, keyPressBuffer)
 
 	InitKeyboard()
 
 	// Setup counting timers
-	// timers should be tweaked at 60 Hz, roughly every 16 millisecond
+	// timers should be tweaked at 60 Hz,
+	// roughly every 16 millisecond
+	// TODO: derive from CPU speed in some way?
 	ticker := time.NewTicker(time.Duration(16666) * time.Microsecond)
 
 	go func() {
@@ -61,7 +52,7 @@ func InitVM(vmConfig *VMConfig) *VM {
 
 // InitDisplay ..
 func (vm *VM) InitDisplay() {
-	vm.NewDisplay(vm.keyboardEvents)
+	vm.NewDisplay()
 }
 
 // ReadOpcode checks the memory and the current state of cpu
@@ -73,55 +64,33 @@ func (vm *VM) ReadOpcode() (uint16, error) {
 
 	pc := cpu.programCounter
 
-	// no need to off-set since we directly map
-	// the rom data at 0x200 in the memory.ram buffer
-	// and init the PC with 0x200 val
-
-	// read two bytes of data and concat
-	// (what's happening in the function call)
+	// Read two bytes of data and concat
+	// (what's happening in the below function call)
 	// op1 := memory.ram[pc]
 	// op2 := memory.ram[pc+1]
 	// concat the 2 bytes of code
 	// opcode := (uint16(op1) << 8) | uint16(op2)
-
 	opcode := binary.BigEndian.Uint16(memory.ram[pc : pc+2])
-
-	//hexRep := HexOf(opcode)
-	//log.Infof("**** Identified opcode :: %s ****\n", hexRep)
-
-	// PC is be incremented inside opcodes,
-	// for better locality of the instruction exec logic
-	// and some opcode modify PC in non-standard ways
 
 	return opcode, nil
 }
 
-// Tick method executes one opcode at a time
+// Tick executes one OPCODE at a time
 func (vm *VM) Tick() {
 
-	opcode, err := vm.ReadOpcode()
-
-	if err != nil {
-		// figure out a way to more gracefully
-		// end the program when ROM execution is
-		// completed or the display window is closed
-		log.Fatal(err)
-	}
-
+	opcode, _ := vm.ReadOpcode()
 	cpu := vm.cpu
 
-	// log.Infof("Before executing Opcode: %s, PC: %d, SP: %d", HexOf(opcode), cpu.programCounter, cpu.stackPointer)
 	log.Debug(cpu.register)
 	vm.executeOpcode(opcode)
-
-	//log.Infof("Executed: %s", HexOf(opcode))
 }
 
-// This will be our massive switch statement for now
-// but I intend to improve it with some matching and all
-// to leverage function pointer array
+// Our massive switch statement
+// @future: Can this be improved with rust like matching and
+// how can function pointer array be leveraged to make this better
 func (vm *VM) executeOpcode(opcode uint16) {
 
+	// Notes to self while understanding the opcode anatomy and execution
 	// Anatomy of a CHIP-8 opcode
 	// Length of every opcode: 2 bytes
 	//   1st nibble 2nd nibble      3rd nibble 4th nibble
@@ -154,9 +123,6 @@ func (vm *VM) executeOpcode(opcode uint16) {
 	x := secondNibble
 	y := thirdNibble
 	kk := lowerByte
-
-	//log.Infof("UB: %s LB: %s", HexOfByte(upperByte), HexOfByte(lowerByte))
-	//log.Infof("FstN: %s SN: %s TN: %s FthN: %s", HexOfByte(firstNibble), HexOfByte(secondNibble), HexOfByte(thirdNibble), HexOfByte(fourthNibble))
 
 	if opcode == 0 {
 		// NOP
@@ -220,7 +186,6 @@ func (vm *VM) executeOpcode(opcode uint16) {
 			// 8xyE
 			vm.shl(x, y)
 		}
-
 	} else if firstNibble == 9 {
 		// 9xy0
 		vm.sne(x, y)

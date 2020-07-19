@@ -1,19 +1,9 @@
 package main
 
 import (
-	"time"
-
 	"golang.org/x/mobile/event/key"
+	"time"
 )
-
-// TODO: can content of this file be encapsulated
-// inside a struct?
-
-// Keyboard maps virtual actual user keyboard keys with
-// virtual CHIP-8 controller keys
-type Keyboard struct {
-	keypad [4][4]byte
-}
 
 // LastPressedKey stores the what and when the key was pressed
 type LastPressedKey struct {
@@ -29,7 +19,7 @@ var keypad = [4][4]byte{
 	{7, 8, 9, 0xE},
 	{0xA, 0, 0xb, 0xF}}
 
-var keyboardMap map[key.Code]byte = map[key.Code]byte{
+var keyboardMap = map[key.Code]byte{
 	key.Code0: keypad[3][1],
 	key.Code1: keypad[0][0],
 	key.Code2: keypad[0][1],
@@ -59,36 +49,29 @@ func generateReverseKeyMap() {
 
 func eligibleKeyEvent(event key.Event) bool {
 	_, present := keyboardMap[event.Code]
-	return present
+
+	// skip DirRelease and DirNone events
+	// DirNone indicates that the key was not released
+	// or Pressed; it remains static..
+
+	return present && (event.Direction == key.DirPress)
 }
 
 // ProcessKeyEvent ..
 func ProcessKeyEvent(event key.Event) {
-
 	if !eligibleKeyEvent(event) {
 		return
 	}
 
-	// record last
+	// record last key press
 	lastPressedKey.code = event.Code
 	lastPressedKey.time = time.Now()
 
-	// continue further processing only for
-	// key.(DirPress, DirRelease) events
-
-	// DirNone indicates that the key was not released
-	// or Pressed; it remains static..
-	if event.Direction == key.DirNone {
-		return
-	}
-
-	// Put the `Pressed` or `Released` event inside the
-	// keyboard state.
-	keyboardState[event.Code] = event.Direction
+	// Put the `Pressed` event inside the keyboard state.
+	keyboardState[event.Code] = key.DirPress
 }
 
 var keyboardState map[key.Code]key.Direction
-
 
 // InitKeyboard ..
 func InitKeyboard() {
@@ -99,13 +82,11 @@ func InitKeyboard() {
 
 // GetKeyState ..
 func GetKeyState(chip8Key byte) key.Direction {
-	res, present := reverseKeyboardMap[chip8Key]
-	// should be unreachable code?!
-	if !present {
-		// raise panic
-	}
-
+	res, _ := reverseKeyboardMap[chip8Key]
 	dir, _ := keyboardState[res]
+
+	// side-effect: reset key state since we're consuming this
+	keyboardState[res] = key.DirRelease
 
 	return dir
 }

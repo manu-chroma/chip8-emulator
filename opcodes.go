@@ -111,7 +111,7 @@ func (vm *VM) se_reg(x, y uint8) {
 	log.Debugf("SKIP NXT INS if Vx == Vy, Vx: %d and kk: %d", cpu.register[x], cpu.register[y])
 
 	if cpu.register[x] == cpu.register[y] {
-		
+
 		vm.SkipInstruction()
 	} else {
 		vm.IncrementPC()
@@ -359,10 +359,9 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 				cpu.register[0xF] = 1
 			}
 
-			// display[yLine][xLine] ^= res
 			img := scr.backBuffer.RGBA()
 			r, g, b, a := img.At(int(xLine), int(yLine)).RGBA()
-			currColor := color.RGBA{uint8(r), uint8(g), uint8(b), uint8(a)}
+			currColor := color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}
 			if currColor == Black && res == 1 {
 				img.SetRGBA(int(xLine), int(yLine), White)
 			} else if currColor == White && res == 1 {
@@ -450,6 +449,9 @@ func (vm *VM) ld_key(vx uint8) {
 	cpu := vm.cpu
 
 	val, _ := keyboardMap[pressedKeyCode]
+
+	// reset pressed key
+	keyboardState[pressedKeyCode] = key.DirRelease
 
 	cpu.register[vx] = val
 

@@ -2,9 +2,15 @@ package main
 
 import (
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"time"
 )
+
+func setupLogging() {
+	// log.SetFlags(log.LstdFlags | log.Lshortfile)
+	log.SetLevel(log.InfoLevel)
+}
 
 // MinOf arbitary no. of bytes
 func MinOf(vars ...byte) byte {
