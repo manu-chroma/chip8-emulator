@@ -40,6 +40,7 @@ var (
 
 // Screen encapsulates our display arr, window
 // and the backBuffer we're using to upload to display
+// y for height, x for row
 type Screen struct {
 	// todo: display can be replaced with actual modification of backBuffer
 	display    [EmuHeight][EmuWidth]int // y for height, x for row
