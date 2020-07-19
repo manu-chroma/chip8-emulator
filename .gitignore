@@ -1,8 +1,10 @@
 # custom
-todo.txt
+todo
 *.iml
 *.idea
 .vscode
+
+roms/
 
 # Binaries for programs and plugins
 *.exe
