@@ -9,7 +9,7 @@ import (
 // Refer to: http://mattmik.com/files/chip8/mastering/chip8.html
 // Excellent guide to understanding everything about chip8 emulation
 const (
-	CPUTickerSpeed = time.Duration(20) * time.Millisecond
+	CPUTickerSpeed = time.Duration(5) * time.Millisecond
 )
 
 func main() {

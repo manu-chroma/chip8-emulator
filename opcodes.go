@@ -81,7 +81,6 @@ func (vm *VM) se(x uint8, kk byte) {
 	log.Debugf("SKIP NXT INS if Vx == kk, Vx: %d and kk: %d", cpu.register[x], kk)
 
 	if cpu.register[x] == kk {
-		// skipping ins
 		vm.SkipInstruction()
 	} else {
 		vm.IncrementPC()
@@ -386,11 +385,11 @@ func (vm *VM) skp(vx uint8) {
 	cpu := vm.cpu
 
 	vxData := cpu.register[vx]
-
 	keyState := GetKeyState(vxData)
 
+	log.Printf("Invoking ExA1: vxData: %d and mapped key: %s", vxData, reverseKeyboardMap[vxData])
+
 	if keyState == key.DirPress {
-		// skip instruction
 		vm.SkipInstruction()
 	} else {
 		vm.IncrementPC()
@@ -404,8 +403,9 @@ func (vm *VM) sknp(vx uint8) {
 	cpu := vm.cpu
 
 	vxData := cpu.register[vx]
-
 	keyState := GetKeyState(vxData)
+
+	log.Printf("Invoking ExA1: vxData: %d and mapped key: %s", vxData, reverseKeyboardMap[vxData])
 
 	if keyState != key.DirPress {
 		vm.SkipInstruction()
