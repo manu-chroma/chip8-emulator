@@ -262,8 +262,8 @@ func (vm *VM) shl(vx, vy uint8) {
 	// set VF to MSB of VX
 	cpu.register[0xF] = cpu.register[vx] >> 7
 	// x = y << 1 OR x = x << 1: both works
-	//check 8xyE notes at https://massung.github.io/CHIP-8/
-	cpu.register[vx] = cpu.register[vy] << 1
+	// check 8xyE notes at https://massung.github.io/CHIP-8/
+	cpu.register[vx] = cpu.register[vx] << 1
 
 	vm.IncrementPC()
 }
