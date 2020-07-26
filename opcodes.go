@@ -382,11 +382,12 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the down position, PC is increased by 2.
 func (vm *VM) skp(vx uint8) {
 	cpu := vm.cpu
+	k := vm.keyboard
 
 	vxData := cpu.register[vx]
-	keyState := GetKeyState(vxData)
+	keyState := k.GetKeyState(vxData)
 
-	log.Printf("Invoking ExA1: vxData: %d and mapped key: %s", vxData, reverseKeyboardMap[vxData])
+	log.Printf("Invoking ExA1: vxData: %d and mapped key: %s", vxData, k.reverseKeyboardMap[vxData])
 
 	if keyState == key.DirPress {
 		vm.SkipInstruction()
@@ -400,11 +401,12 @@ func (vm *VM) skp(vx uint8) {
 // Checks the keyboard, and if the key corresponding to the value of Vx is currently in the up position, PC is increased by 2.
 func (vm *VM) sknp(vx uint8) {
 	cpu := vm.cpu
+	k := vm.keyboard
 
 	vxData := cpu.register[vx]
-	keyState := GetKeyState(vxData)
+	keyState := k.GetKeyState(vxData)
 
-	log.Printf("Invoking ExA1: vxData: %d and mapped key: %s", vxData, reverseKeyboardMap[vxData])
+	log.Printf("Invoking ExA1: vxData: %d and mapped key: %s", vxData, k.reverseKeyboardMap[vxData])
 
 	if keyState != key.DirPress {
 		vm.SkipInstruction()
@@ -429,14 +431,16 @@ func (vm *VM) ld_dt_in_vx(vx uint8) {
 func (vm *VM) ld_key(vx uint8) {
 	currTime := time.Now()
 
+	k := vm.keyboard
+
 	var pressedKeyCode key.Code
 
-	log.Debugf("BEFORE: LastPressedKeyTime: %t and currTime: %t", lastPressedKey.time, currTime)
+	log.Debugf("BEFORE: LastPressedKeyTime: %t and currTime: %t", k.lastPressedKey.time, currTime)
 
 	// Blocked until we get a correct input
 	for {
-		if lastPressedKey.time.After(currTime) {
-			pressedKeyCode = lastPressedKey.code
+		if k.lastPressedKey.time.After(currTime) {
+			pressedKeyCode = k.lastPressedKey.code
 			break
 		}
 		// add 1 cycle sleep b/w polling
@@ -444,14 +448,14 @@ func (vm *VM) ld_key(vx uint8) {
 		// TODO: in future, can this be an event?
 	}
 
-	log.Debugf("AFTER: LastPressedKeyTime: %t and currTime: %t", lastPressedKey.time, currTime)
+	log.Debugf("AFTER: LastPressedKeyTime: %t and currTime: %t", k.lastPressedKey.time, currTime)
 
 	cpu := vm.cpu
 
-	val, _ := keyboardMap[pressedKeyCode]
+	val, _ := k.keyboardMap[pressedKeyCode]
 
 	// reset pressed key
-	keyboardState[pressedKeyCode] = key.DirRelease
+	k.keyboardState[pressedKeyCode] = key.DirRelease
 
 	cpu.register[vx] = val
 

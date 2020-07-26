@@ -39,10 +39,11 @@ func main() {
 		}
 	}()
 
-	// TODO: the screen should be running in the main go thread.
+	// Running display in the main go routine due to:
 	// https://stackoverflow.com/a/57474359/1180321
-	// throws hard error when running the code on macOS
-	vm.InitDisplay()
+	// Throws hard error when running on different routine
+	// on macOS
+	vm.InitDisplay(vm.keyboard)
 }
 
 func parseConfig() VMConfig {

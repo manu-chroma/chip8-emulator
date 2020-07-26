@@ -8,12 +8,10 @@ import (
 
 // VM contains the whole state of emulator
 type VM struct {
-	cpu    *CPU
-	screen *Screen
-	memory *Memory
-
-	// todo: keyboard should be access via the VM struct and not directly
-	// or from VM keyboard interface methods..
+	cpu      *CPU
+	screen   *Screen
+	memory   *Memory
+	keyboard *Keyboard
 }
 
 // VMConfig ...
@@ -27,10 +25,9 @@ func InitVM(vmConfig *VMConfig) *VM {
 	vm := new(VM)
 	vm.cpu = newCPU()
 	vm.memory = newMemory()
+	vm.keyboard = newKeyboard()
 
 	vm.memory.LoadRomFile(vmConfig.romFilePath)
-
-	InitKeyboard()
 
 	// Setup counting timers
 	// timers should be tweaked at 60 Hz,
@@ -51,8 +48,8 @@ func InitVM(vmConfig *VMConfig) *VM {
 }
 
 // InitDisplay ..
-func (vm *VM) InitDisplay() {
-	vm.NewDisplay()
+func (vm *VM) InitDisplay(keyboard *Keyboard) {
+	vm.NewDisplay(keyboard)
 }
 
 // ReadOpcode checks the memory and the current state of cpu

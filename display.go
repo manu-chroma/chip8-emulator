@@ -61,7 +61,7 @@ func (scr *Screen) clearDisplay() {
 
 // NewDisplay returns Screen struct instance
 // which obtain from the screen
-func (vm *VM) NewDisplay() *Screen {
+func (vm *VM) NewDisplay(keyboard *Keyboard) *Screen {
 
 	scr := &Screen{}
 	vm.screen = scr
@@ -121,7 +121,8 @@ func (vm *VM) NewDisplay() *Screen {
 					return
 				}
 
-				ProcessKeyEvent(e)
+				// todo: how can this design be improved?
+				keyboard.ProcessKeyEvent(e)
 
 			case paint.Event:
 				log.Debugln("Paint event, re-painting the buffer..")
