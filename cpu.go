@@ -10,7 +10,7 @@ type CPU struct {
 	registerI uint16
 
 	// delay and sound timer
-	delay, sound byte
+	delay, sound uint8
 
 	// used to store the current executing addr
 	programCounter uint16
@@ -28,13 +28,8 @@ type CPU struct {
 // StepTimers : Update timer values per second according to the frequency of their clocks
 func (cpu *CPU) StepTimers() {
 
-	if cpu.delay != 0 {
-		cpu.delay = MaxOf(0, cpu.delay-1)
-	}
-
-	if cpu.sound != 0 {
-		cpu.sound = MaxOf(0, cpu.sound-1)
-	}
+	cpu.delay = MaxOf(0, cpu.delay-1)
+	cpu.sound = MaxOf(0, cpu.sound-1)
 }
 
 func newCPU() *CPU {
