@@ -24,7 +24,7 @@ func MinOf(vars ...byte) byte {
 	return mini
 }
 
-// MaxOf arbitary no. of bytes
+// MaxOf byte array
 func MaxOf(vars ...byte) byte {
 	maxi := vars[0]
 	for _, i := range vars {
