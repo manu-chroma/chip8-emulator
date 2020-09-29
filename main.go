@@ -13,6 +13,7 @@ const (
 )
 
 var (
+	// EmulatorTick ..
 	EmulatorTick = time.NewTicker(CPUTickerSpeed)
 )
 

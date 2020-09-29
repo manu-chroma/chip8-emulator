@@ -2,17 +2,19 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func setupLogging() {
 	// log.SetFlags(log.LstdFlags | log.Lshortfile)
-	log.SetLevel(log.InfoLevel)
+	// log.SetLevel(log.DebugLevel)
+	log.SetLevel(log.ErrorLevel)
 }
 
-// MinOf arbitary no. of bytes
+// MinOf byte array
 func MinOf(vars ...byte) byte {
 	mini := vars[0]
 	for _, i := range vars {
@@ -24,7 +26,7 @@ func MinOf(vars ...byte) byte {
 	return mini
 }
 
-// MaxOf arbitary no. of bytes
+// MaxOf byte array
 func MaxOf(vars ...byte) byte {
 	maxi := vars[0]
 	for _, i := range vars {
@@ -39,7 +41,6 @@ func MaxOf(vars ...byte) byte {
 // RandInRange returns an int between the range
 // [min, max). Will panic if (max - min) <= 0
 func RandInRange(min, max int) int {
-
 	return rand.Intn(max-min) + min
 }
 

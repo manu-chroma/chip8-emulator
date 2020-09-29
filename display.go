@@ -167,13 +167,24 @@ func copyImageToBuffer(b *screen.Buffer, i *image.RGBA) {
 			}
 		}
 	}
-
 }
 
 // BufferToScreen puts the buffer to the window
 func BufferToScreen(scr *Screen) {
 	// This assumes that there has been updates to the current buffer
 	// and now we are ready to refresh the display
+
+	// copy ground truth to the buffer.
+	img := scr.backBuffer.RGBA()
+	for j := 0; j < EmuHeight; j++ {
+		for i := 0; i < EmuWidth; i++ {
+			if scr.display[j][i] == 0 {
+				img.SetRGBA(i, j, Black)
+			} else {
+				img.SetRGBA(i, j, White)
+			}
+		}
+	}
 
 	scr.window.Send(paint.Event{})
 }
