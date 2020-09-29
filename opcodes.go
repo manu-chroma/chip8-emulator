@@ -2,7 +2,6 @@ package main
 
 import (
 	log "github.com/sirupsen/logrus"
-	"image/color"
 	"time"
 
 	"golang.org/x/mobile/event/key"
@@ -328,47 +327,33 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 
 	log.Debugf("Drawing sprite at x: %d, y:%d", x, y)
 
-	// @refactor: Take a slice of underlying memory instead?
-	buf := make([]byte, n)
-	startAddr := cpu.registerI
-
-	// read N byte sprite data into buf starting from startAddr
-	for i := uint16(0); i < uint16(height); i++ {
-		buf[i] = memory.ram[startAddr+i]
-	}
-
-	scr := vm.screen
-
 	// reset collision register
 	cpu.register[0xF] = 0
+
+	startAddr := cpu.registerI
+	scr := vm.screen
 
 	// display and update collision flag
 	// j for height of the buffer
 	for j := uint8(0); j < height; j++ {
 
+		// memoryLook := memory.ram[cpu.registerI + height];
+		pixel := memory.ram[startAddr+uint16(j)]
+
 		// spread each byte as 8 bits @test
 		for i := uint8(0); i < 8; i++ {
 
-			res := int((buf[j] >> i) & 1)
+			if (pixel & (0x80 >> i)) != 0 {
+				// wrap around if required
+				yLine := (y + j) // % EmuHeight
+				xLine := (x + i) // % EmuWidth
 
-			// wrap around if required
-			yLine := (y + j) % EmuHeight
-			xLine := (x + (8 - i - 1)) % EmuWidth
+				if scr.display[yLine][xLine] == 1 {
+					cpu.register[0xF] = 1
+				}
 
-			if scr.display[yLine][xLine] == 1 && res == 0 {
-				cpu.register[0xF] = 1
+				scr.display[yLine][xLine] ^= 1
 			}
-
-			img := scr.backBuffer.RGBA()
-			r, g, b, a := img.At(int(xLine), int(yLine)).RGBA()
-			currColor := color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}
-			if currColor == Black && res == 1 {
-				img.SetRGBA(int(xLine), int(yLine), White)
-			} else if currColor == White && res == 1 {
-				img.SetRGBA(int(xLine), int(yLine), Black)
-			}
-
-			scr.display[yLine][xLine] ^= res
 		}
 	}
 
