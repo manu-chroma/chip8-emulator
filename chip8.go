@@ -109,14 +109,14 @@ func (vm *VM) executeOpcode(opcode uint16) {
 
 	// In most significant -> to least significant order
 	firstNibble := upperByte >> 4
-	secondNibble := upperByte & 0xF
+	// secondNibble := upperByte & 0xF
 	thirdNibble := lowerByte >> 4
-	fourthNibble := lowerByte & 0xF
+	fourthNibble := opcode & 0x000F
 
 	mmm := opcode & 0xFFF
 
-	x := secondNibble
-	y := thirdNibble
+	x := uint8((opcode & 0x0F00) >> 8)
+	y := uint8((opcode & 0x00F0) >> 4)
 	kk := lowerByte
 
 	if opcode == 0 {

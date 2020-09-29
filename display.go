@@ -167,7 +167,6 @@ func copyImageToBuffer(b *screen.Buffer, i *image.RGBA) {
 			}
 		}
 	}
-
 }
 
 // BufferToScreen puts the buffer to the window
