@@ -1,9 +1,9 @@
 package main
 
 import (
-	log "github.com/sirupsen/logrus"
-	"image/color"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"golang.org/x/mobile/event/key"
 )
@@ -357,15 +357,6 @@ func (vm *VM) drw(vx, vy uint8, n uint8) {
 
 			if scr.display[yLine][xLine] == 1 && res == 0 {
 				cpu.register[0xF] = 1
-			}
-
-			img := scr.backBuffer.RGBA()
-			r, g, b, a := img.At(int(xLine), int(yLine)).RGBA()
-			currColor := color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}
-			if currColor == Black && res == 1 {
-				img.SetRGBA(int(xLine), int(yLine), White)
-			} else if currColor == White && res == 1 {
-				img.SetRGBA(int(xLine), int(yLine), Black)
 			}
 
 			scr.display[yLine][xLine] ^= res
