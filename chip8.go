@@ -29,16 +29,14 @@ func InitVM(vmConfig *VMConfig) *VM {
 
 	vm.memory.LoadRomFile(vmConfig.romFilePath)
 
-	// Setup counting timers
-	// timers should be tweaked at 60 Hz,
-	// roughly every 16 millisecond
-	// TODO: derive from CPU speed in some way?
-	ticker := time.NewTicker(time.Duration(16666) * time.Microsecond)
+	// Setup counting timers with frequency of 60 Hz,
+	// Roughly every 16 millisecond.
+	tickerFrequency := time.NewTicker(time.Duration(16666) * time.Microsecond)
 
 	go func() {
 		for {
 			select {
-			case <-ticker.C:
+			case <-tickerFrequency.C:
 				vm.cpu.StepTimers()
 			}
 		}
@@ -111,14 +109,14 @@ func (vm *VM) executeOpcode(opcode uint16) {
 
 	// In most significant -> to least significant order
 	firstNibble := upperByte >> 4
-	secondNibble := upperByte & 0xF
+	// secondNibble := upperByte & 0xF
 	thirdNibble := lowerByte >> 4
-	fourthNibble := lowerByte & 0xF
+	fourthNibble := opcode & 0x000F
 
 	mmm := opcode & 0xFFF
 
-	x := secondNibble
-	y := thirdNibble
+	x := uint8((opcode & 0x0F00) >> 8)
+	y := uint8((opcode & 0x00F0) >> 4)
 	kk := lowerByte
 
 	if opcode == 0 {
