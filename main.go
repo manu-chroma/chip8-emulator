@@ -2,8 +2,9 @@ package main
 
 import (
 	"flag"
-	log "github.com/sirupsen/logrus"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // Refer to: http://mattmik.com/files/chip8/mastering/chip8.html
@@ -13,6 +14,7 @@ const (
 )
 
 var (
+	// EmulatorTick ..
 	EmulatorTick = time.NewTicker(CPUTickerSpeed)
 )
 

@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"math/rand"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 func setupLogging() {
@@ -12,7 +13,7 @@ func setupLogging() {
 	log.SetLevel(log.InfoLevel)
 }
 
-// MinOf arbitary no. of bytes
+// MinOf bytes array
 func MinOf(vars ...byte) byte {
 	mini := vars[0]
 	for _, i := range vars {
@@ -24,7 +25,7 @@ func MinOf(vars ...byte) byte {
 	return mini
 }
 
-// MaxOf arbitary no. of bytes
+// MaxOf bytes array
 func MaxOf(vars ...byte) byte {
 	maxi := vars[0]
 	for _, i := range vars {

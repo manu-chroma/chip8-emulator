@@ -2,8 +2,9 @@ package main
 
 import (
 	"encoding/binary"
-	log "github.com/sirupsen/logrus"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 // VM contains the whole state of emulator
@@ -29,16 +30,14 @@ func InitVM(vmConfig *VMConfig) *VM {
 
 	vm.memory.LoadRomFile(vmConfig.romFilePath)
 
-	// Setup counting timers
-	// timers should be tweaked at 60 Hz,
-	// roughly every 16 millisecond
-	// TODO: derive from CPU speed in some way?
-	ticker := time.NewTicker(time.Duration(16666) * time.Microsecond)
+	// Setup counting timers with frequency of 60 Hz,
+	// Roughly every 16 millisecond.
+	tickerFrequency := time.NewTicker(time.Duration(16666) * time.Microsecond)
 
 	go func() {
 		for {
 			select {
-			case <-ticker.C:
+			case <-tickerFrequency.C:
 				vm.cpu.StepTimers()
 			}
 		}
