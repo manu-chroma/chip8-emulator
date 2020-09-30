@@ -25,3 +25,4 @@ roms/
 .DS_Store
 # go build binary
 chip8-emulator
+chip8
